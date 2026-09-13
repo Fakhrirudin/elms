@@ -314,6 +314,42 @@ Query:
 &is_active=true
 ```
 
+Response:
+
+```json
+{
+    "success": true,
+    "message": "Users retrieved successfully",
+    "data": [
+        {
+            "id": 4,
+            "name": "John Doe",
+            "email": "john@example.com",
+            "employee_number": "EMP001",
+            "is_active": true,
+            "role": {
+                "id": 4,
+                "name": "EMPLOYEE"
+            },
+            "department": {
+                "id": 1,
+                "name": "IT Department"
+            },
+            "created_at": "2026-01-01T10:00:00+00:00",
+            "updated_at": "2026-01-01T10:00:00+00:00"
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "per_page": 10,
+        "total": 1,
+        "last_page": 1
+    }
+}
+```
+
+`per_page` is capped at 100 per §6. `role` filters by role name (e.g. `EMPLOYEE`), not `role_id`.
+
 ---
 
 ## 8.2 Create User
@@ -341,6 +377,8 @@ Response:
 201 Created
 ```
 
+Response body follows the same `user` shape shown in §8.1 (single object under `data`, no `meta`). The password is never included in the response.
+
 ---
 
 ## 8.3 Get User
@@ -349,6 +387,8 @@ Response:
 GET /api/v1/users/{id}
 ```
 
+Response body follows the same `user` shape shown in §8.1 (single object under `data`).
+
 ---
 
 ## 8.4 Update User
@@ -356,6 +396,8 @@ GET /api/v1/users/{id}
 ```http
 PUT /api/v1/users/{id}
 ```
+
+Also accepts `PATCH` for partial updates. Fields are optional (`sometimes`) except where noted.
 
 Request:
 
@@ -368,6 +410,13 @@ Request:
     "department_id": 1
 }
 ```
+
+### Role/department authorization rules
+
+* A user can never change their own `role_id` (self role-escalation guard), regardless of role — returns `403`.
+* `LEARNING_ADMIN` cannot update (or change the status of) a user whose current role is `SUPER_ADMIN` or `LEARNING_ADMIN` — returns `403`.
+* `LEARNING_ADMIN` cannot assign the `SUPER_ADMIN` or `LEARNING_ADMIN` role to any user — returns `403`.
+* `SUPER_ADMIN` is not subject to the above two restrictions (only the self role-change guard applies).
 
 ---
 
@@ -1575,6 +1624,8 @@ Contoh 500:
 ```
 
 Production response tidak boleh menampilkan exception detail.
+
+Sejak Task 03 (Users module), `bootstrap/app.php` memetakan `AuthenticationException` (401), `AuthorizationException` (403), `ValidationException` (422), dan `ModelNotFoundException`/`NotFoundHttpException` (404) ke envelope `ApiResponse` di atas untuk seluruh route `api/*`, sehingga contoh-contoh di section ini berlaku otomatis tanpa perlu ditangani manual di setiap controller.
 
 ---
 
