@@ -148,11 +148,13 @@ UNIQUE (name)
 ### Initial roles
 
 ```text
-Super Admin
-Learning Admin
-Instructor
-Employee
+SUPER_ADMIN
+LEARNING_ADMIN
+INSTRUCTOR
+EMPLOYEE
 ```
+
+Nilai ini mengikuti konvensi konstanta pada `docs/requirements.md` §25 dan field `role` pada `docs/api.md` §7 (`"role": "EMPLOYEE"`), bukan display-case.
 
 ---
 
