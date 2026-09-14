@@ -136,7 +136,6 @@ GET  /api/v1/auth/me
 | 429    | Too many requests                        |
 | 500    | Internal server error                    |
 
----
 
 # 6. Pagination
 
