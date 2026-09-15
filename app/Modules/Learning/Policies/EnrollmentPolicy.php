@@ -32,9 +32,26 @@ class EnrollmentPolicy
         return $course->status === Course::STATUS_PUBLISHED;
     }
 
+    public function viewProgress(User $user, Enrollment $enrollment): bool
+    {
+        if ($this->isAdmin($user)) {
+            return true;
+        }
+
+        if ($user->hasRole(Role::INSTRUCTOR)) {
+            return $enrollment->course->instructors()->where('users.id', $user->id)->exists();
+        }
+
+        return $enrollment->user_id === $user->id;
+    }
+
+    public function completeMaterial(User $user, Enrollment $enrollment): bool
+    {
+        return $enrollment->user_id === $user->id && $user->is_active;
+    }
+
     private function isAdmin(User $user): bool
     {
         return $user->hasRole(Role::SUPER_ADMIN, Role::LEARNING_ADMIN);
     }
 }
-
