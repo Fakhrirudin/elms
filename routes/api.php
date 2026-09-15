@@ -9,4 +9,5 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     require app_path('Modules/Authentication/Routes/api.php');
     require app_path('Modules/Users/Routes/api.php');
     require app_path('Modules/Courses/Routes/api.php');
+    require app_path('Modules/Learning/Routes/api.php');
 });
