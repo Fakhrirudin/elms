@@ -8,6 +8,7 @@ use App\Models\Material;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\User;
+use App\Modules\Notifications\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 class CertificateService
 {
+    public function __construct(
+        protected ?NotificationService $notificationService = null
+    ) {}
     /**
      * @return array{eligible: bool, reasons: string[], mandatory_completed: bool, quizzes_passed: bool, already_issued: bool}
      */
@@ -106,11 +110,15 @@ class CertificateService
                         $enrollment->save();
                     }
 
-                    return Certificate::create([
+                    $newCertificate = Certificate::create([
                         'enrollment_id' => $enrollment->id,
                         'certificate_number' => $certificateNumber,
                         'issued_at' => now(),
                     ]);
+
+                    ($this->notificationService ?? app(NotificationService::class))->notifyCertificateIssued($newCertificate);
+
+                    return $newCertificate;
                 });
 
                 break;

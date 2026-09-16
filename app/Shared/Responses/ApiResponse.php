@@ -23,19 +23,21 @@ class ApiResponse
     /**
      * Build a paginated collection response with the `meta` envelope
      * documented in docs/api.md §6 (Pagination).
+     *
+     * @param  array<string, mixed>  $extraMeta
      */
-    public static function paginated(mixed $data, LengthAwarePaginator $paginator, string $message = 'Request successful'): JsonResponse
+    public static function paginated(mixed $data, LengthAwarePaginator $paginator, string $message = 'Request successful', array $extraMeta = []): JsonResponse
     {
         return response()->json([
             'success' => true,
             'message' => $message,
             'data' => $data,
-            'meta' => [
+            'meta' => array_merge([
                 'current_page' => $paginator->currentPage(),
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
                 'last_page' => $paginator->lastPage(),
-            ],
+            ], $extraMeta),
         ]);
     }
 

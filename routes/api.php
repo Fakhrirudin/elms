@@ -13,4 +13,5 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     require app_path('Modules/Assessments/Routes/api.php');
     require app_path('Modules/Certificates/Routes/api.php');
     require app_path('Modules/Reports/Routes/api.php');
+    require app_path('Modules/Notifications/Routes/api.php');
 });

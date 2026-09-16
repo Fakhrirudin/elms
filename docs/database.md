@@ -69,6 +69,7 @@ Database MVP terdiri dari tabel:
 14. `quiz_attempts`
 15. `quiz_answers`
 16. `certificates`
+17. `notifications`
 
 ---
 
@@ -93,7 +94,8 @@ categories
 users
   │
   ├──< course_instructors >── courses
-  └──< enrollments >────────── courses
+  ├──< enrollments >────────── courses
+  └──< notifications
 
 courses
   │
@@ -844,6 +846,58 @@ Satu enrollment hanya menghasilkan satu certificate.
 
 ---
 
+# 5.17 `notifications`
+
+Menyimpan in-app notification untuk setiap user berdasarkan event pembelajaran.
+
+### Columns
+
+| Column       | Type        | Null | Default        | Description            |
+| ------------ | ----------- | ---: | -------------- | ---------------------- |
+| `id`         | BIGINT      |   No | Auto Increment | Primary key            |
+| `user_id`    | BIGINT      |   No | -              | Recipient user         |
+| `type`       | VARCHAR(50) |   No | -              | Notification type code |
+| `title`      | VARCHAR(255)|   No | -              | Notification title     |
+| `message`    | TEXT        |   No | -              | Notification message   |
+| `data`       | JSONB       |  Yes | NULL           | Contextual metadata    |
+| `read_at`    | TIMESTAMP   |  Yes | NULL           | Read timestamp         |
+| `created_at` | TIMESTAMP   |  Yes | NULL           | Creation timestamp     |
+| `updated_at` | TIMESTAMP   |  Yes | NULL           | Update timestamp       |
+
+### Constraints
+
+```text
+PRIMARY KEY (id)
+
+FOREIGN KEY (user_id)
+REFERENCES users(id)
+ON DELETE CASCADE
+```
+
+### Indexes
+
+```text
+INDEX (user_id)
+INDEX (user_id, read_at)
+INDEX (created_at)
+```
+
+### Notification types (MVP)
+
+```text
+COURSE_ENROLLED
+QUIZ_RESULT
+CERTIFICATE_ISSUED
+```
+
+### Business rules
+
+* User hanya dapat melihat, menandai telah dibaca, dan menghapus notification miliknya sendiri.
+* Notification dibuat secara transactional bersamaan dengan event pemicunya (enrollment, submit quiz, issue certificate).
+* `read_at` bernilai `NULL` saat notifikasi pertama kali dibuat (unread).
+
+---
+
 # 6. Referential Integrity
 
 Foreign key behavior:
@@ -861,6 +915,7 @@ Foreign key behavior:
 | User → Enrollment              | CASCADE         |
 | Course → Enrollment            | CASCADE         |
 | Enrollment → Material Progress | CASCADE         |
+| User → Notification            | CASCADE         |
 | Quiz → Question                | CASCADE         |
 | Question → Option              | CASCADE         |
 | Quiz → Attempt                 | CASCADE         |

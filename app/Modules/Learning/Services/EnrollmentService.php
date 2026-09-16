@@ -5,11 +5,16 @@ namespace App\Modules\Learning\Services;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Modules\Notifications\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
 class EnrollmentService
 {
+    public function __construct(
+        protected ?NotificationService $notificationService = null
+    ) {}
+
     /**
      * @throws ValidationException
      */
@@ -26,6 +31,8 @@ class EnrollmentService
             'status' => Enrollment::STATUS_ENROLLED,
             'enrolled_at' => now(),
         ]);
+
+        ($this->notificationService ?? app(NotificationService::class))->notifyCourseEnrolled($enrollment);
 
         return $enrollment->load(['course.category', 'course.instructors']);
     }

@@ -1427,7 +1427,100 @@ Query:
 
 ---
 
-# 23. Authorization Matrix
+# 23. Notifications API
+
+Base:
+
+```text
+/api/v1/notifications
+```
+
+## 23.1 List Notifications
+
+```http
+GET /api/v1/notifications
+```
+
+Query:
+
+```text
+?unread=true
+&type=COURSE_ENROLLED
+&page=1
+&per_page=15
+```
+
+Response:
+
+```json
+{
+    "success": true,
+    "message": "Notifications retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "type": "COURSE_ENROLLED",
+            "title": "Course Enrollment Confirmed",
+            "message": "You have successfully enrolled in Laravel Backend Development.",
+            "data": {
+                "course_id": 10,
+                "course_title": "Laravel Backend Development",
+                "slug": "laravel-backend-development"
+            },
+            "is_read": false,
+            "read_at": null,
+            "created_at": "2026-09-20T10:00:00.000000Z"
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "per_page": 15,
+        "total": 1,
+        "last_page": 1,
+        "unread_count": 1
+    }
+}
+```
+
+## 23.2 Unread Count
+
+```http
+GET /api/v1/notifications/unread-count
+```
+
+Response:
+
+```json
+{
+    "success": true,
+    "message": "Unread notification count retrieved successfully",
+    "data": {
+        "unread_count": 1
+    }
+}
+```
+
+## 23.3 Mark Notification as Read
+
+```http
+PATCH /api/v1/notifications/{notification}/read
+```
+
+## 23.4 Mark All as Read
+
+```http
+PATCH /api/v1/notifications/read-all
+```
+
+## 23.5 Delete Notification
+
+```http
+DELETE /api/v1/notifications/{notification}
+```
+
+---
+
+# 24. Authorization Matrix
 
 | Endpoint Area   | Super Admin | Learning Admin |   Instructor | Employee |
 | --------------- | ----------: | -------------: | -----------: | -------: |
@@ -1444,6 +1537,7 @@ Query:
 | Quiz Attempt    |        Full |           Full |          Own |      Own |
 | Certificates    |        Full |           Full |         Read |      Own |
 | Reports         |        Full |           Full |      Limited |      Own |
+| Notifications   |         Own |            Own |          Own |      Own |
 
 Authorization harus diterapkan pada backend menggunakan middleware/policies.
 
@@ -1881,9 +1975,9 @@ API akan dikembangkan secara bertahap:
 11. Dashboard
        ↓
 12. Reports
+       ↓
+13. Notifications
 ```
-
-Notifications bukan bagian dari prioritas MVP.
 
 ---
 
@@ -1940,10 +2034,16 @@ API contract dan implementation harus tetap sinkron.
 │
 ├── dashboard
 │
-└── reports
-    ├── courses
-    ├── learning
-    └── quiz
+├── reports
+│   ├── courses
+│   ├── learning
+│   └── quiz
+│
+└── notifications
+    ├── unread-count
+    ├── read-all
+    └── {notification}
+        └── read
 ```
 
 Dokumen ini merupakan API contract awal untuk ELMS MVP dan dapat berkembang mengikuti implementation, selama perubahan tetap konsisten dengan requirements, architecture, database, dan module boundaries.

@@ -7,11 +7,15 @@ use App\Models\Quiz;
 use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use App\Models\User;
+use App\Modules\Notifications\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class QuizAttemptService
 {
+    public function __construct(
+        protected ?NotificationService $notificationService = null
+    ) {}
     public function startAttempt(User $user, Quiz $quiz): QuizAttempt
     {
         $existingAttemptsCount = QuizAttempt::where('quiz_id', $quiz->id)
@@ -113,6 +117,8 @@ class QuizAttemptService
                 'passed' => $passed,
                 'submitted_at' => now(),
             ]);
+
+            ($this->notificationService ?? app(NotificationService::class))->notifyQuizResult($attempt);
         });
 
         return $attempt->fresh(['quiz.questions.options', 'answers']);

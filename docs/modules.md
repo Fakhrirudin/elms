@@ -573,30 +573,38 @@ GET /api/v1/reports/quiz
 
 # 10. Notifications Module
 
-## Status
+## Purpose
 
-Future enhancement.
+Menyediakan in-app notification bagi pengguna terkait event pembelajaran dan milestone aktivitas di ELMS.
 
-Module ini belum menjadi fokus MVP.
+## Responsibilities
 
-## Potential Responsibilities
+* In-app notification inbox
+* Unread notification count
+* Mark notification as read
+* Mark all notifications as read
+* Delete/dismiss notification
+* Learning event triggers:
+  * Course enrollment confirmation (`COURSE_ENROLLED`)
+  * Quiz submission result (`QUIZ_RESULT`)
+  * Certificate issuance confirmation (`CERTIFICATE_ISSUED`)
 
-* Course announcement
-* Learning reminder
-* Quiz reminder
-* Certificate notification
-* System notification
-
-Potential implementation:
+## API Endpoints
 
 ```text
-Database Notification
-Email
-Queue
-External Notification Service
+GET    /api/v1/notifications
+GET    /api/v1/notifications/unread-count
+PATCH  /api/v1/notifications/read-all
+PATCH  /api/v1/notifications/{notification}/read
+DELETE /api/v1/notifications/{notification}
 ```
 
-Tidak perlu mengimplementasikan notification system kompleks pada MVP.
+## Rules
+
+* User hanya dapat mengakses, menandai telah dibaca, dan menghapus notification miliknya sendiri.
+* Akses cross-user menghasilkan `403 Forbidden`.
+* Notification dibuat secara transactional bersamaan dengan proses bisnis terkait (enrollment, quiz submission, certificate generation).
+* MVP menggunakan database persistence synchronous tanpa email, push notification, background worker, atau external service.
 
 ---
 
