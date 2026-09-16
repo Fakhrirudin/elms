@@ -357,4 +357,3 @@ class LearningProgressTest extends TestCase
         $response->assertForbidden();
     }
 }
-

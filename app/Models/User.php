@@ -95,6 +95,14 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * @return HasMany<QuizAttempt, $this>
+     */
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class);
+    }
+
+    /**
      * Determine whether the user is assigned one of the given roles.
      */
     public function hasRole(string ...$roles): bool

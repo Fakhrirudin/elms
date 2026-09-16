@@ -39,4 +39,3 @@ class LearningProgressController extends Controller
         );
     }
 }
-

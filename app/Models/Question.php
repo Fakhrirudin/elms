@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Modules\Courses\Policies\ModulePolicy;
-use Database\Factories\ModuleFactory;
+use App\Modules\Assessments\Policies\QuestionPolicy;
+use Database\Factories\QuestionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,19 +14,18 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $course_id
- * @property string $title
- * @property string|null $description
+ * @property int $quiz_id
+ * @property string $question
  * @property int $sort_order
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Course $course
+ * @property-read Quiz $quiz
  */
-#[Fillable(['course_id', 'title', 'description', 'sort_order'])]
-#[UsePolicy(ModulePolicy::class)]
-class Module extends Model
+#[Fillable(['quiz_id', 'question', 'sort_order'])]
+#[UsePolicy(QuestionPolicy::class)]
+class Question extends Model
 {
-    /** @use HasFactory<ModuleFactory> */
+    /** @use HasFactory<QuestionFactory> */
     use HasFactory;
 
     /**
@@ -40,26 +39,27 @@ class Module extends Model
     }
 
     /**
-     * @return BelongsTo<Course, $this>
+     * @return BelongsTo<Quiz, $this>
      */
-    public function course(): BelongsTo
+    public function quiz(): BelongsTo
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(Quiz::class);
     }
 
     /**
-     * @return HasMany<Material, $this>
+     * @return HasMany<Option, $this>
      */
-    public function materials(): HasMany
+    public function options(): HasMany
     {
-        return $this->hasMany(Material::class)->orderBy('sort_order');
+        return $this->hasMany(Option::class)->orderBy('sort_order');
     }
 
     /**
-     * @return HasMany<Quiz, $this>
+     * @return HasMany<QuizAnswer, $this>
      */
-    public function quizzes(): HasMany
+    public function answers(): HasMany
     {
-        return $this->hasMany(Quiz::class);
+        return $this->hasMany(QuizAnswer::class);
     }
 }
+

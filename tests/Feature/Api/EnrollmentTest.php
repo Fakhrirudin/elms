@@ -242,4 +242,3 @@ class EnrollmentTest extends TestCase
         $response->assertJsonPath('data.id', $enrollment->id);
     }
 }
-

@@ -51,4 +51,3 @@ class EnrollmentService
         return $enrollment->load(['course.category', 'course.instructors', 'user']);
     }
 }
-

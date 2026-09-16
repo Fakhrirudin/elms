@@ -45,4 +45,3 @@ class EnrollmentFactory extends Factory
         ]);
     }
 }
-

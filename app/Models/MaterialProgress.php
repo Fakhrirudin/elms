@@ -53,4 +53,3 @@ class MaterialProgress extends Model
         return $this->belongsTo(Material::class);
     }
 }
-

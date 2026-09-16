@@ -21,4 +21,3 @@ class MaterialCompletionResource extends JsonResource
         ];
     }
 }
-

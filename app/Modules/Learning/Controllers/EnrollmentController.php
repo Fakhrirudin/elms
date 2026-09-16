@@ -54,4 +54,3 @@ class EnrollmentController extends Controller
         );
     }
 }
-
