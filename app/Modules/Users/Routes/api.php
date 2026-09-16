@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Users\Controllers\DepartmentController;
 use App\Modules\Users\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,4 +13,15 @@ Route::middleware(['auth:sanctum', 'role:SUPER_ADMIN,LEARNING_ADMIN'])
         Route::get('/{user}', [UserController::class, 'show'])->name('show');
         Route::match(['put', 'patch'], '/{user}', [UserController::class, 'update'])->name('update');
         Route::patch('/{user}/status', [UserController::class, 'updateStatus'])->name('status');
+    });
+
+Route::middleware('auth:sanctum')
+    ->prefix('departments')
+    ->name('departments.')
+    ->group(function () {
+        Route::get('/', [DepartmentController::class, 'index'])->name('index');
+        Route::post('/', [DepartmentController::class, 'store'])->name('store');
+        Route::get('/{department}', [DepartmentController::class, 'show'])->name('show');
+        Route::match(['put', 'patch'], '/{department}', [DepartmentController::class, 'update'])->name('update');
+        Route::delete('/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
     });

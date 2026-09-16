@@ -16,6 +16,7 @@ class QuizAttemptService
     public function __construct(
         protected ?NotificationService $notificationService = null
     ) {}
+
     public function startAttempt(User $user, Quiz $quiz): QuizAttempt
     {
         $existingAttemptsCount = QuizAttempt::where('quiz_id', $quiz->id)

@@ -24,4 +24,3 @@ class QuizReportRequest extends FormRequest
         ];
     }
 }
-

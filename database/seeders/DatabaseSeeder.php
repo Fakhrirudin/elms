@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -12,18 +10,19 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Seed the application's database in proper dependency order.
      */
     public function run(): void
     {
-        $this->call(RoleSeeder::class);
-
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'role_id' => Role::where('name', Role::EMPLOYEE)->value('id'),
+        $this->call([
+            RoleSeeder::class,
+            DepartmentSeeder::class,
+            UserSeeder::class,
+            CategorySeeder::class,
+            CourseSeeder::class,
+            QuizSeeder::class,
+            EnrollmentProgressSeeder::class,
+            NotificationSeeder::class,
         ]);
     }
 }

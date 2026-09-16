@@ -78,4 +78,3 @@ class Certificate extends Model
         );
     }
 }
-

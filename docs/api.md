@@ -449,6 +449,52 @@ Base:
 GET /api/v1/departments
 ```
 
+Access:
+
+```text
+Authenticated (SUPER_ADMIN, LEARNING_ADMIN, INSTRUCTOR, EMPLOYEE)
+```
+
+Query Parameters:
+
+```text
+?page=1
+&per_page=15
+&search=teknologi
+&parent_id=1
+&sort_by=name
+&sort_direction=asc
+```
+
+Response:
+
+```json
+{
+    "success": true,
+    "message": "Departments retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "Pusat Teknologi Informasi dan Komunikasi",
+            "code": "PUSDATIN",
+            "description": "Pengelolaan infrastruktur dan sistem informasi",
+            "parent_id": null,
+            "parent": null,
+            "children": [],
+            "users_count": 5,
+            "created_at": "2026-01-01T10:00:00+00:00",
+            "updated_at": "2026-01-01T10:00:00+00:00"
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "per_page": 15,
+        "total": 1,
+        "last_page": 1
+    }
+}
+```
+
 ---
 
 ## 9.2 Create Department
@@ -457,21 +503,162 @@ GET /api/v1/departments
 POST /api/v1/departments
 ```
 
+Access:
+
+```text
+SUPER_ADMIN
+LEARNING_ADMIN
+```
+
 Request:
 
 ```json
 {
-    "name": "IT Department",
-    "description": "Information Technology Department"
+    "name": "Pusat Teknologi Informasi dan Komunikasi",
+    "code": "PUSDATIN",
+    "description": "Pengelolaan infrastruktur dan sistem informasi",
+    "parent_id": null
+}
+```
+
+Response:
+
+```text
+201 Created
+```
+
+```json
+{
+    "success": true,
+    "message": "Department created successfully",
+    "data": {
+        "id": 1,
+        "name": "Pusat Teknologi Informasi dan Komunikasi",
+        "code": "PUSDATIN",
+        "description": "Pengelolaan infrastruktur dan sistem informasi",
+        "parent_id": null,
+        "parent": null,
+        "children": [],
+        "users_count": 0,
+        "created_at": "2026-01-01T10:00:00+00:00",
+        "updated_at": "2026-01-01T10:00:00+00:00"
+    }
 }
 ```
 
 ---
 
-## 9.3 Update Department
+## 9.3 Get Department
+
+```http
+GET /api/v1/departments/{id}
+```
+
+Access:
+
+```text
+Authenticated (SUPER_ADMIN, LEARNING_ADMIN, INSTRUCTOR, EMPLOYEE)
+```
+
+Response:
+
+```text
+200 OK
+```
+
+```json
+{
+    "success": true,
+    "message": "Department retrieved successfully",
+    "data": {
+        "id": 1,
+        "name": "Pusat Teknologi Informasi dan Komunikasi",
+        "code": "PUSDATIN",
+        "description": "Pengelolaan infrastruktur dan sistem informasi",
+        "parent_id": null,
+        "parent": null,
+        "children": [
+            {
+                "id": 2,
+                "name": "Bidang Pengembangan Sistem",
+                "code": "BANGSIS"
+            }
+        ],
+        "users_count": 5,
+        "created_at": "2026-01-01T10:00:00+00:00",
+        "updated_at": "2026-01-01T10:00:00+00:00"
+    }
+}
+```
+
+---
+
+## 9.4 Update Department
 
 ```http
 PUT /api/v1/departments/{id}
+```
+
+Also accepts `PATCH`.
+
+Access:
+
+```text
+SUPER_ADMIN
+LEARNING_ADMIN
+```
+
+Request:
+
+```json
+{
+    "name": "Pusat Data dan Informasi",
+    "code": "PUSDATIN-REV",
+    "description": "Unit pengelola data strategis",
+    "parent_id": null
+}
+```
+
+Rules:
+* A department cannot be its own parent or a descendant of itself (circular hierarchy guard) — returns `422`.
+* `name` and `code` uniqueness are validated excluding current department ID.
+
+Response:
+
+```text
+200 OK
+```
+
+---
+
+## 9.5 Delete Department
+
+```http
+DELETE /api/v1/departments/{id}
+```
+
+Access:
+
+```text
+SUPER_ADMIN only
+```
+
+Rules:
+* Cannot delete if department has child departments — returns `422 Unprocessable Content`.
+* Cannot delete if department has assigned users — returns `422 Unprocessable Content`.
+
+Response:
+
+```text
+200 OK
+```
+
+```json
+{
+    "success": true,
+    "message": "Department deleted successfully",
+    "data": null
+}
 ```
 
 ---

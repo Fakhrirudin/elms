@@ -10,4 +10,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/learning', [ReportController::class, 'learning'])->name('reports.learning');
     Route::get('/reports/quiz', [ReportController::class, 'quiz'])->name('reports.quiz');
 });
-

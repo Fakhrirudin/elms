@@ -136,10 +136,14 @@ PATCH  /api/v1/users/{id}/status
 ```text
 GET    /api/v1/departments
 POST   /api/v1/departments
+GET    /api/v1/departments/{id}
 PUT    /api/v1/departments/{id}
+DELETE /api/v1/departments/{id}
 ```
 
 ## Rules
+
+### User Rules
 
 * Email harus unique.
 * Employee number harus unique jika diisi.
@@ -147,6 +151,17 @@ PUT    /api/v1/departments/{id}
 * Role menentukan authorization.
 * Password harus disimpan menggunakan hashing.
 * User tidak boleh mengubah permission dirinya sendiri secara bebas.
+
+### Department Rules
+
+* `name` wajib dan unique (case-insensitive).
+* `code` opsional namun unique jika diisi.
+* `SUPER_ADMIN` dan `LEARNING_ADMIN` memiliki wewenang create dan update department.
+* Hanya `SUPER_ADMIN` yang dapat menghapus (delete) department.
+* Pengguna terautentikasi (termasuk `EMPLOYEE`) dapat melihat daftar dan detail department (read-only).
+* Hubungan parent-child berputar (circular hierarchy) dilarang dan dicegah oleh sistem.
+* Department yang memiliki sub-departemen (child departments) tidak boleh dihapus.
+* Department yang memiliki pengguna terkait (assigned users) tidak boleh dihapus.
 
 ---
 

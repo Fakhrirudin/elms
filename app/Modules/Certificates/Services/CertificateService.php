@@ -19,6 +19,7 @@ class CertificateService
     public function __construct(
         protected ?NotificationService $notificationService = null
     ) {}
+
     /**
      * @return array{eligible: bool, reasons: string[], mandatory_completed: bool, quizzes_passed: bool, already_issued: bool}
      */
@@ -188,4 +189,3 @@ class CertificateService
         return sprintf('%s%06d', $prefix, $nextSeq);
     }
 }
-

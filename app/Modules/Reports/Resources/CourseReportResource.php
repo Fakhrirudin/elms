@@ -25,4 +25,3 @@ class CourseReportResource extends JsonResource
         ];
     }
 }
-

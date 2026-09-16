@@ -2,6 +2,7 @@
 
 namespace App\Modules\Notifications\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Modules\Notifications\Requests\ListNotificationRequest;
 use App\Modules\Notifications\Resources\NotificationResource;
@@ -9,7 +10,6 @@ use App\Modules\Notifications\Services\NotificationService;
 use App\Shared\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 
 class NotificationController extends Controller
 {
@@ -24,8 +24,8 @@ class NotificationController extends Controller
         $unreadCount = $this->notificationService->getUnreadCount($user);
 
         return ApiResponse::paginated(
-            $paginator,
             NotificationResource::collection($paginator->items()),
+            $paginator,
             'Notifications retrieved successfully',
             [
                 'unread_count' => $unreadCount,
@@ -77,4 +77,3 @@ class NotificationController extends Controller
         );
     }
 }
-

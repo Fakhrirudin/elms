@@ -27,4 +27,3 @@ class ReportPolicy
         return $user->hasRole(Role::SUPER_ADMIN, Role::LEARNING_ADMIN, Role::INSTRUCTOR);
     }
 }
-

@@ -163,4 +163,3 @@ class DashboardTest extends TestCase
         $response->assertUnauthorized();
     }
 }
-

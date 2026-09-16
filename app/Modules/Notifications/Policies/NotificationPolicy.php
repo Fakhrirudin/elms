@@ -27,4 +27,3 @@ class NotificationPolicy
         return $user->id === $notification->user_id;
     }
 }
-

@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Department;
 use App\Models\Notification;
 use App\Modules\Notifications\Policies\NotificationPolicy;
 use App\Modules\Reports\Policies\ReportPolicy;
+use App\Modules\Users\Policies\DepartmentPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('viewQuizReport', [ReportPolicy::class, 'viewQuizReport']);
 
         Gate::policy(Notification::class, NotificationPolicy::class);
+        Gate::policy(Department::class, DepartmentPolicy::class);
     }
 
     /**

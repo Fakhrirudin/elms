@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Modules\Notifications\Policies\NotificationPolicy;
+use Carbon\CarbonInterface;
 use Database\Factories\NotificationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -19,9 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $title
  * @property string $message
  * @property array<string, mixed>|null $data
- * @property \Carbon\CarbonInterface|null $read_at
- * @property \Carbon\CarbonInterface $created_at
- * @property \Carbon\CarbonInterface $updated_at
+ * @property CarbonInterface|null $read_at
+ * @property CarbonInterface $created_at
+ * @property CarbonInterface $updated_at
  */
 #[UsePolicy(NotificationPolicy::class)]
 #[UseFactory(NotificationFactory::class)]
@@ -30,6 +31,12 @@ class Notification extends Model
 {
     /** @use HasFactory<NotificationFactory> */
     use HasFactory;
+
+    public const TYPE_COURSE_ENROLLED = 'COURSE_ENROLLED';
+
+    public const TYPE_QUIZ_RESULT = 'QUIZ_RESULT';
+
+    public const TYPE_CERTIFICATE_ISSUED = 'CERTIFICATE_ISSUED';
 
     /**
      * @return array<string, string>
@@ -68,4 +75,3 @@ class Notification extends Model
         return $query->whereNotNull('read_at');
     }
 }
-

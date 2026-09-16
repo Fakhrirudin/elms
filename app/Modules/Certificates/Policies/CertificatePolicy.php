@@ -43,4 +43,3 @@ class CertificatePolicy
         return $user->hasRole(Role::SUPER_ADMIN, Role::LEARNING_ADMIN);
     }
 }
-

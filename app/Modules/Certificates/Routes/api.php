@@ -9,4 +9,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
     Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
 });
-

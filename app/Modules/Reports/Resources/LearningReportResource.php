@@ -31,4 +31,3 @@ class LearningReportResource extends JsonResource
         ];
     }
 }
-

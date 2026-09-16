@@ -186,4 +186,3 @@ class ReportService
         return $paginated;
     }
 }
-
