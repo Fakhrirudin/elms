@@ -25,4 +25,3 @@ class QuizSubmitResultResource extends JsonResource
         ];
     }
 }
-

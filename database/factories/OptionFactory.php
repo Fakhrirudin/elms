@@ -42,4 +42,3 @@ class OptionFactory extends Factory
         ]);
     }
 }
-

@@ -54,4 +54,3 @@ class QuizAttemptController extends Controller
         );
     }
 }
-

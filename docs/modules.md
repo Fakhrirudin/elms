@@ -483,8 +483,10 @@ Generate Certificate
 ## Certificate API
 
 ```text
-GET /api/v1/my-certificates
-GET /api/v1/certificates/{certificate}
+POST /api/v1/enrollments/{enrollment}/certificate
+GET  /api/v1/my-certificates
+GET  /api/v1/certificates
+GET  /api/v1/certificates/{certificate}
 ```
 
 Future:
@@ -495,19 +497,21 @@ GET /api/v1/certificates/verify/{certificateNumber}
 
 ## Rules
 
-Certificate hanya dapat dibuat apabila:
+Certificate dapat diterbitkan apabila:
 
 ```text
-Enrollment status = COMPLETED
-AND
 Mandatory materials = 100%
 AND
-Required quiz = PASSED
+Required published quizzes = PASSED (atau tidak ada quiz di course)
 ```
 
-Certificate number harus unique.
+Saat certificate diterbitkan, status enrollment akan ditransisikan menjadi `COMPLETED` dan `completed_at` akan diisi.
 
-Certificate hanya dibuat satu kali untuk satu enrollment.
+Jika enrollment sudah memiliki certificate, request berikutnya akan mengembalikan certificate yang sudah ada secara idempotent.
+
+Certificate number harus unique dengan format concurrency-safe (`ELMS-YYYY-XXXXXX`).
+
+Satu enrollment hanya menghasilkan satu certificate.
 
 ---
 

@@ -25,4 +25,3 @@ class UpdateQuizRequest extends FormRequest
         ];
     }
 }
-

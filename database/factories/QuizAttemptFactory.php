@@ -51,4 +51,3 @@ class QuizAttemptFactory extends Factory
         return $this->submitted($score, false);
     }
 }
-

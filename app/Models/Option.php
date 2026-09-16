@@ -53,4 +53,3 @@ class Option extends Model
         return $this->hasMany(QuizAnswer::class);
     }
 }
-

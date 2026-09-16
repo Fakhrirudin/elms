@@ -1206,7 +1206,67 @@ Submit response:
 
 # 20. Certificate API
 
-## 20.1 My Certificates
+## 20.1 Issue Certificate
+
+```http
+POST /api/v1/enrollments/{enrollment}/certificate
+```
+
+Response (New Certificate - 201 Created):
+
+```json
+{
+    "success": true,
+    "message": "Certificate issued successfully",
+    "data": {
+        "id": 1,
+        "certificate_number": "ELMS-2026-000001",
+        "enrollment_id": 5,
+        "course": {
+            "id": 10,
+            "title": "Laravel Backend Development",
+            "slug": "laravel-backend-development"
+        },
+        "employee": {
+            "id": 20,
+            "name": "John Doe",
+            "nip": "199001012020121001"
+        },
+        "issued_at": "2026-01-01T12:00:00Z",
+        "created_at": "2026-01-01T12:00:00Z"
+    }
+}
+```
+
+Response (Already Issued - 200 OK):
+
+```json
+{
+    "success": true,
+    "message": "Certificate already issued",
+    "data": {
+        "id": 1,
+        "certificate_number": "ELMS-2026-000001",
+        "enrollment_id": 5,
+        "course": {
+            "id": 10,
+            "title": "Laravel Backend Development",
+            "slug": "laravel-backend-development"
+        },
+        "employee": {
+            "id": 20,
+            "name": "John Doe",
+            "nip": "199001012020121001"
+        },
+        "issued_at": "2026-01-01T12:00:00Z",
+        "created_at": "2026-01-01T12:00:00Z"
+    }
+}
+```
+
+---
+
+## 20.2 My Certificates
 
 ```http
 GET /api/v1/my-certificates
@@ -1214,7 +1274,20 @@ GET /api/v1/my-certificates
 
 ---
 
-## 20.2 Certificate Detail
+## 20.3 List Certificates (Admin & Instructor)
+
+```http
+GET /api/v1/certificates
+```
+
+Query Parameters:
+- `course_id`: Filter by course
+- `user_id`: Filter by employee
+- `page`: Page number
+
+---
+
+## 20.4 Certificate Detail
 
 ```http
 GET /api/v1/certificates/{certificate}

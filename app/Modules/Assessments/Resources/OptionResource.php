@@ -38,4 +38,3 @@ class OptionResource extends JsonResource
         ];
     }
 }
-

@@ -107,4 +107,3 @@ class QuizPolicy
         return $course !== null && $course->instructors()->where('users.id', $user->id)->exists();
     }
 }
-

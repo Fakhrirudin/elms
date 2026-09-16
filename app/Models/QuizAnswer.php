@@ -50,4 +50,3 @@ class QuizAnswer extends Model
         return $this->belongsTo(Option::class);
     }
 }
-

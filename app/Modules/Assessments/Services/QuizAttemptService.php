@@ -118,4 +118,3 @@ class QuizAttemptService
         return $attempt->fresh(['quiz.questions.options', 'answers']);
     }
 }
-

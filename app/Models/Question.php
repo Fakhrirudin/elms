@@ -62,4 +62,3 @@ class Question extends Model
         return $this->hasMany(QuizAnswer::class);
     }
 }
-

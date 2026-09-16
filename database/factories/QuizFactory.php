@@ -52,4 +52,3 @@ class QuizFactory extends Factory
         ]);
     }
 }
-

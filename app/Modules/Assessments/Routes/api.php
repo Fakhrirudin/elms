@@ -23,4 +23,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/attempts/{attempt}', [QuizAttemptController::class, 'show'])->name('attempts.show');
     Route::post('/attempts/{attempt}/submit', [QuizAttemptController::class, 'submit'])->name('attempts.submit');
 });
-

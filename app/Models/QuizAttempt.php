@@ -70,4 +70,3 @@ class QuizAttempt extends Model
         return $this->hasMany(QuizAnswer::class, 'attempt_id');
     }
 }
-

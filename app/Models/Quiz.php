@@ -74,4 +74,3 @@ class Quiz extends Model
         return $this->hasMany(QuizAttempt::class);
     }
 }
-

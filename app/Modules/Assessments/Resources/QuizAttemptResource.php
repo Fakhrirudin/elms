@@ -52,4 +52,3 @@ class QuizAttemptResource extends JsonResource
         ];
     }
 }
-

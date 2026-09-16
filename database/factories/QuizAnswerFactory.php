@@ -29,4 +29,3 @@ class QuizAnswerFactory extends Factory
         ];
     }
 }
-

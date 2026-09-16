@@ -23,4 +23,3 @@ class SubmitQuizAttemptRequest extends FormRequest
         ];
     }
 }
-

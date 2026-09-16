@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -70,5 +71,13 @@ class Enrollment extends Model
     public function materialProgress(): HasMany
     {
         return $this->hasMany(MaterialProgress::class);
+    }
+
+    /**
+     * @return HasOne<Certificate, $this>
+     */
+    public function certificate(): HasOne
+    {
+        return $this->hasOne(Certificate::class);
     }
 }
