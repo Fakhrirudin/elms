@@ -571,6 +571,12 @@ resources/js/
 
 ├── features/
 │   ├── auth/
+│   ├── dashboard/
+│   │   ├── types/
+│   │   ├── services/
+│   │   ├── hooks/
+│   │   ├── components/
+│   │   └── pages/
 │   ├── courses/
 │   ├── learning/
 │   ├── assessments/
@@ -580,11 +586,20 @@ resources/js/
 ├── components/
 ├── services/
 ├── hooks/
-├── routes/
+├── router/
 └── types/
 ```
 
 Pendekatan feature-based digunakan agar frontend tetap terorganisir berdasarkan business domain.
+
+### Dashboard Feature Architecture (Task 14)
+Dashboard mengonsumsi REST API `GET /api/v1/dashboard` secara role-aware:
+* **Service:** `dashboardService.getDashboard()` via Axios client.
+* **Server State:** `useDashboard()` TanStack Query hook (`queryKey: ['dashboard']`, `staleTime: 2m`).
+* **Role-Aware Views:**
+  * **EMPLOYEE:** Menampilkan 4 metrik (`total_courses`, `in_progress`, `completed`, `certificates`), status progress belajar, dan empty state.
+  * **INSTRUCTOR:** Menampilkan 4 metrik pengajaran (`assigned_courses`, `total_enrollments`, `completed_courses`, `average_quiz_score`) dan ringkasan evaluasi.
+  * **SUPER_ADMIN & LEARNING_ADMIN:** Menampilkan 6 metrik institusional (`total_employees`, `total_courses`, `published_courses`, `total_enrollments`, `completed_courses`, `average_quiz_score`) dan status katalog.
 
 ---
 
