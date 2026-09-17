@@ -2,10 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+require __DIR__.'/settings.php';
+
+Route::get('/', function () {
+    return view('app');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', function () {
+        return view('app');
+    })->name('dashboard');
 });
 
-require __DIR__.'/settings.php';
+Route::get('/{any}', function () {
+    return view('app');
+})->where('any', '^(?!api).*$')->name('spa');

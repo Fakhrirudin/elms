@@ -1,14 +1,23 @@
-export type User = {
-    id: number;
-    name: string;
+import { User } from './user';
+
+export type { User };
+
+export interface LoginPayload {
     email: string;
-    avatar?: string;
-    email_verified_at: string | null;
-    two_factor_enabled?: boolean;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
-};
+    password: string;
+}
+
+export interface AuthResponse {
+    user: User;
+    token: string;
+}
+
+export interface SessionState {
+    user: User | null;
+    token: string | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+}
 
 export type Auth = {
     user: User;
