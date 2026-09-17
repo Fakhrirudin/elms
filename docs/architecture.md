@@ -601,6 +601,23 @@ Dashboard mengonsumsi REST API `GET /api/v1/dashboard` secara role-aware:
   * **INSTRUCTOR:** Menampilkan 4 metrik pengajaran (`assigned_courses`, `total_enrollments`, `completed_courses`, `average_quiz_score`) dan ringkasan evaluasi.
   * **SUPER_ADMIN & LEARNING_ADMIN:** Menampilkan 6 metrik institusional (`total_employees`, `total_courses`, `published_courses`, `total_enrollments`, `completed_courses`, `average_quiz_score`) dan status katalog.
 
+### Courses Feature Architecture (Task 15)
+Katalog kursus dan detail kurikulum diimplementasikan secara modular pada `features/courses/`:
+* **API Endpoints:**
+  * `GET /api/v1/courses`: Katalog kursus berpaginasi dengan filter pencarian kata kunci, kategori, dan pengurutan (`sort_by`, `sort_direction`). Scoping visibilitas kursus mengikuti backend policy secara transparan (Employee hanya menerima `PUBLISHED`).
+  * `GET /api/v1/categories`: Taksonomi kategori untuk filtering catalog.
+  * `GET /api/v1/courses/{course}`: Detail metadata kursus, instruktur, dan durasi.
+  * `GET /api/v1/courses/{course}/modules`: Kurikulum/silabus kursus terurut dengan daftar materi belajar (`TEXT`, `PDF`, `VIDEO`) serta status mandatory/optional.
+* **Services & Server State:**
+  * `courseService.ts`: Modul HTTP client Axios terpusat.
+  * `useCourses()`: TanStack Query hook untuk katalog (`queryKey: ['courses', filters]`, `placeholderData: keepPrevious`).
+  * `useCategories()`: TanStack Query hook untuk kategori (`queryKey: ['categories']`, `staleTime: 5m`).
+  * `useCourseDetail()`: TanStack Query hook detail kursus (`queryKey: ['course', id]`).
+  * `useCourseModules()`: TanStack Query hook silabus materi (`queryKey: ['course-modules', id]`).
+* **Components & UX:**
+  * `CourseCatalogPage.tsx`: Halaman katalog `/courses` dengan search debounce, category filter pills, sorting selector, responsive course card grid, loading skeletons, dan pagination controls.
+  * `CourseDetailPage.tsx`: Halaman detail `/courses/:id` dengan hero metadata banner, thumbnail fallback, dan silabus terstruktur via `ModuleAccordion` & `MaterialItem`.
+
 ---
 
 ## 14. Frontend State Management

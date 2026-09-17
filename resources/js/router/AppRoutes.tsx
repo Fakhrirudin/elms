@@ -5,6 +5,8 @@ import PublicRoute from './PublicRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
+import CourseCatalogPage from '@/features/courses/pages/CourseCatalogPage';
+import CourseDetailPage from '@/features/courses/pages/CourseDetailPage';
 import NotFoundPage from './NotFoundPage';
 
 export const AppRoutes: React.FC = () => {
@@ -19,6 +21,8 @@ export const AppRoutes: React.FC = () => {
             <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/courses" element={<CourseCatalogPage />} />
+                    <Route path="/courses/:id" element={<CourseDetailPage />} />
                 </Route>
             </Route>
 

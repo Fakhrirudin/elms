@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import DashboardPage from '../pages/DashboardPage';
 import { useAuth } from '@/hooks/useAuth';
 import useDashboard from '../hooks/useDashboard';
@@ -182,9 +183,14 @@ describe('DashboardPage', () => {
             isFetching: false,
         } as any);
 
-        render(<DashboardPage />);
+        render(
+            <MemoryRouter>
+                <DashboardPage />
+            </MemoryRouter>
+        );
 
         expect(screen.getByText('No Course Enrollments Yet')).toBeInTheDocument();
+        expect(screen.getByText('Browse Catalog')).toBeInTheDocument();
     });
 
     it('renders instructor dashboard metrics correctly', () => {

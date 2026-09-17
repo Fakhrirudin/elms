@@ -1,8 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { EmployeeDashboardData } from '../types';
 import MetricCard from './MetricCard';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { BookOpen, Clock, CheckCircle2, Award, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Clock, CheckCircle2, Award, Sparkles, ArrowRight } from 'lucide-react';
 
 interface EmployeeDashboardProps {
     data: EmployeeDashboardData;
@@ -65,6 +67,14 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ data }) =>
                             <p className="text-xs sm:text-sm text-muted-foreground">
                                 You have not enrolled in any training courses yet. Once courses are published in the employee learning catalog, your progress and earned certificates will appear here.
                             </p>
+                        </div>
+                        <div className="pt-2">
+                            <Button asChild size="sm" className="text-xs font-medium">
+                                <Link to="/courses">
+                                    <span>Browse Catalog</span>
+                                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                                </Link>
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>

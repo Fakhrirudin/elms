@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import RoleBadge from '@/features/auth/components/RoleBadge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { LogOut, User as UserIcon, BookOpen } from 'lucide-react';
 export const AppLayout: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleLogout = async () => {
         await logout();
@@ -19,8 +20,8 @@ export const AppLayout: React.FC = () => {
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-40 w-full border-b border-border bg-card/80 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    {/* Brand */}
-                    <div className="flex items-center gap-3">
+                    {/* Brand & Navigation */}
+                    <div className="flex items-center gap-4 sm:gap-6">
                         <Link to="/dashboard" className="flex items-center gap-2.5 font-bold text-lg text-foreground hover:opacity-90">
                             <span className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-xs">
                                 E
@@ -29,6 +30,30 @@ export const AppLayout: React.FC = () => {
                                 ELMS
                             </span>
                         </Link>
+
+                        {/* Navigation Links */}
+                        <nav className="flex items-center gap-1 sm:gap-1.5" aria-label="Main Navigation">
+                            <Link
+                                to="/dashboard"
+                                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                                    location.pathname === '/dashboard'
+                                        ? 'bg-muted text-foreground font-semibold'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                            >
+                                Dashboard
+                            </Link>
+                            <Link
+                                to="/courses"
+                                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                                    location.pathname.startsWith('/courses')
+                                        ? 'bg-muted text-foreground font-semibold'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                            >
+                                Courses
+                            </Link>
+                        </nav>
                     </div>
 
                     {/* Authenticated User Menu & Logout */}
