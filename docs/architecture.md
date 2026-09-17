@@ -618,6 +618,30 @@ Katalog kursus dan detail kurikulum diimplementasikan secara modular pada `featu
   * `CourseCatalogPage.tsx`: Halaman katalog `/courses` dengan search debounce, category filter pills, sorting selector, responsive course card grid, loading skeletons, dan pagination controls.
   * `CourseDetailPage.tsx`: Halaman detail `/courses/:id` dengan hero metadata banner, thumbnail fallback, dan silabus terstruktur via `ModuleAccordion` & `MaterialItem`.
 
+### Learning Feature Architecture (Task 16)
+Domain pembelajaran dan pendaftaran kursus diimplementasikan secara modular pada `features/learning/`:
+* **API Endpoints:**
+  * `POST /api/v1/courses/{course}/enroll`: Pendaftaran kursus bagi role `EMPLOYEE` dengan inisialisasi status `ENROLLED`.
+  * `GET /api/v1/my-courses`: Daftar kursus yang diikuti employee berpaginasi dan terfilter status (`ALL`, `IN_PROGRESS`, `ENROLLED`, `COMPLETED`).
+  * `GET /api/v1/enrollments/{enrollment}`: Detail pendaftaran kursus beserta relasi kursus, kategori, dan instruktur.
+  * `GET /api/v1/enrollments/{enrollment}/progress`: Metrik progress belajar authoritative dari backend (`progress` percentage, `total_mandatory_materials`, `completed_mandatory_materials`, `status`).
+  * `POST /api/v1/enrollments/{enrollment}/materials/{material}/complete`: Penyelesaian materi secara idempoten yang memicu rekalkulasi progress dan transisi status (`ENROLLED` → `IN_PROGRESS` → `COMPLETED`).
+* **Services & Server State:**
+  * `learningService.ts`: Modul HTTP client Axios untuk pendaftaran, progress, dan penyelesaian materi.
+  * `useMyCourses()`: TanStack Query hook daftar kursus pengguna (`queryKey: ['my-courses', params]`).
+  * `useEnrollment()`: TanStack Query hook detail enrollment (`queryKey: ['enrollment', id]`).
+  * `useLearningProgress()`: TanStack Query hook progress authoritative backend (`queryKey: ['learning-progress', id]`).
+  * `useEnrollCourse()`: TanStack Query mutation hook pendaftaran kursus dengan invalidasi `['my-courses']` dan `['dashboard']`.
+  * `useCompleteMaterial()`: TanStack Query mutation hook penyelesaian materi dengan invalidasi `['learning-progress', id]`, `['enrollment', id]`, `['my-courses']`, dan `['dashboard']`.
+* **Components & UX:**
+  * `EnrollmentStatusBadge.tsx`: Badge status visual semantik (`ENROLLED`, `IN_PROGRESS`, `COMPLETED`).
+  * `EnrolledCourseCard.tsx`: Kartu kursus pada My Learning dengan metadata kursus, thumbnail fallback, status badge, dan CTA "Continue Learning".
+  * `MaterialListItem.tsx`: Item checklist materi dengan indikator kelulusan dan tombol penyelesaian.
+  * `MaterialContentViewer.tsx`: Viewer konten materi (teks materi `TEXT`, placeholder metadata untuk `PDF` dan `VIDEO`).
+  * `MyLearningPage.tsx`: Halaman dashboard pembelajaran `/my-learning` bagi employee.
+  * `LearningPlayerPage.tsx`: Halaman interaktif `/my-learning/:enrollmentId` untuk membaca materi, memantau kemajuan kurikulum, dan menandai materi selesai.
+  * `CourseDetailPage.tsx`: Integrasi CTA dinamis role-aware ("Enroll in Course" vs "Continue Learning") via pencocokan `course_id` pada `GET /my-courses`.
+
 ---
 
 ## 14. Frontend State Management

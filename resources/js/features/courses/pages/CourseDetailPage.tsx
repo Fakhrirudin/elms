@@ -1,5 +1,8 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import useMyCourses from '@/features/learning/hooks/useMyCourses';
+import useEnrollCourse from '@/features/learning/hooks/useEnrollCourse';
 import { useCourseDetail } from '../hooks/useCourseDetail';
 import { useCourseModules } from '../hooks/useCourseModules';
 import ModuleAccordion from '../components/syllabus/ModuleAccordion';
@@ -8,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     ArrowLeft,
+    ArrowRight,
     Clock,
     Layers,
     Calendar,
@@ -16,10 +20,17 @@ import {
     AlertCircle,
     RefreshCw,
     Sparkles,
+    GraduationCap,
+    Loader2,
 } from 'lucide-react';
 
 export const CourseDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const isEmployee = user?.role === 'EMPLOYEE';
+
+    const [enrollError, setEnrollError] = useState<string | null>(null);
 
     const {
         data: course,
@@ -36,6 +47,33 @@ export const CourseDetailPage: React.FC = () => {
         error: errorModules,
         refetch: refetchModules,
     } = useCourseModules(id);
+
+    // Fetch employee enrollments to detect if already enrolled in this course
+    const { data: myCoursesData } = useMyCourses(
+        { per_page: 100 },
+        { enabled: isEmployee }
+    );
+
+    const existingEnrollment = course
+        ? myCoursesData?.enrollments.find((e) => e.course_id === course.id)
+        : undefined;
+
+    const enrollMutation = useEnrollCourse();
+
+    const handleEnroll = () => {
+        if (!course) return;
+        setEnrollError(null);
+        enrollMutation.mutate(course.id, {
+            onSuccess: (newEnrollment) => {
+                navigate(`/my-learning/${newEnrollment.id}`);
+            },
+            onError: (err) => {
+                setEnrollError(
+                    err.response?.data?.message || 'Failed to enroll in this course.'
+                );
+            },
+        });
+    };
 
     // Format published date
     const formattedPublishedDate = course?.published_at
@@ -231,6 +269,57 @@ export const CourseDetailPage: React.FC = () => {
                             <span>
                                 Led by <span className="font-medium text-foreground">{instructorNames}</span>
                             </span>
+                        </div>
+
+                        {/* Enrollment CTA Section */}
+                        <div className="pt-3 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            {isEmployee ? (
+                                existingEnrollment ? (
+                                    <div className="flex items-center gap-3">
+                                        <Button asChild size="sm" className="text-xs font-semibold gap-1.5">
+                                            <Link to={`/my-learning/${existingEnrollment.id}`}>
+                                                <span>Continue Learning</span>
+                                                <ArrowRight className="h-3.5 w-3.5" />
+                                            </Link>
+                                        </Button>
+                                        <span className="text-xs text-muted-foreground">
+                                            Enrolled in course
+                                        </span>
+                                    </div>
+                                ) : course.status === 'PUBLISHED' ? (
+                                    <div className="space-y-1.5 w-full sm:w-auto">
+                                        <Button
+                                            size="sm"
+                                            disabled={enrollMutation.isPending}
+                                            onClick={handleEnroll}
+                                            className="text-xs font-semibold gap-1.5 w-full sm:w-auto"
+                                        >
+                                            {enrollMutation.isPending ? (
+                                                <>
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    <span>Enrolling...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <GraduationCap className="h-4 w-4" />
+                                                    <span>Enroll in Course</span>
+                                                </>
+                                            )}
+                                        </Button>
+                                        {enrollError && (
+                                            <p className="text-xs text-destructive">{enrollError}</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <Badge variant="outline" className="text-xs text-muted-foreground w-fit">
+                                        Enrollment Unavailable ({course.status})
+                                    </Badge>
+                                )
+                            ) : (
+                                <span className="text-xs text-muted-foreground italic">
+                                    Course enrollment is available for employee learners.
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>

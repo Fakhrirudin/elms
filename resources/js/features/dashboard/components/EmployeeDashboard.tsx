@@ -126,6 +126,15 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ data }) =>
                                 <p className="text-base font-bold text-purple-600 dark:text-purple-400 mt-0.5">{certificates}</p>
                             </div>
                         </div>
+
+                        <div className="pt-2 flex justify-end">
+                            <Button asChild size="sm" variant="outline" className="text-xs font-medium gap-1.5">
+                                <Link to="/my-learning">
+                                    <span>Go to My Learning</span>
+                                    <ArrowRight className="h-3.5 w-3.5" />
+                                </Link>
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             )}

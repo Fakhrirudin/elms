@@ -127,7 +127,11 @@ describe('DashboardPage', () => {
             isFetching: false,
         } as any);
 
-        render(<DashboardPage />);
+        render(
+            <MemoryRouter>
+                <DashboardPage />
+            </MemoryRouter>
+        );
 
         expect(screen.getByText(/welcome back, siti rahmawati!/i)).toBeInTheDocument();
         expect(screen.getByText('Pusdiklat')).toBeInTheDocument();

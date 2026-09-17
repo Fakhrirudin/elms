@@ -53,6 +53,18 @@ export const AppLayout: React.FC = () => {
                             >
                                 Courses
                             </Link>
+                            {user?.role === 'EMPLOYEE' && (
+                                <Link
+                                    to="/my-learning"
+                                    className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                                        location.pathname.startsWith('/my-learning')
+                                            ? 'bg-muted text-foreground font-semibold'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    }`}
+                                >
+                                    My Learning
+                                </Link>
+                            )}
                         </nav>
                     </div>
 
