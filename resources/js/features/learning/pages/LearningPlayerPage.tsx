@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import useEnrollment from '../hooks/useEnrollment';
 import useLearningProgress from '../hooks/useLearningProgress';
 import useCompleteMaterial from '../hooks/useCompleteMaterial';
@@ -20,10 +20,13 @@ import {
     CheckCircle2,
     Layers,
     Users,
+    Award,
 } from 'lucide-react';
 
 export const LearningPlayerPage: React.FC = () => {
     const { enrollmentId } = useParams<{ enrollmentId: string }>();
+    const [searchParams] = useSearchParams();
+    const explicitQuizId = searchParams.get('quiz_id');
 
     // 1. Authoritative Enrollment Resource
     const {
@@ -345,6 +348,46 @@ export const LearningPlayerPage: React.FC = () => {
                             );
                         })}
                     </div>
+                )}
+
+                {/* Course Assessment Section: Rendered ONLY when explicit quiz_id is provided via query string */}
+                {explicitQuizId && (
+                    <Card className="border-border bg-card shadow-xs overflow-hidden" data-testid="course-assessment-card">
+                        <CardHeader className="p-4 sm:p-5 pb-3 bg-muted/20 border-b border-border/50">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
+                                        Evaluation
+                                    </span>
+                                    <CardTitle className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-2">
+                                        <Award className="h-4 w-4 text-primary" />
+                                        <span>Course Assessment</span>
+                                    </CardTitle>
+                                    <CardDescription className="text-xs text-muted-foreground">
+                                        Authoritative evaluation required to demonstrate competency and fulfill certificate criteria.
+                                    </CardDescription>
+                                </div>
+                                <Badge variant="secondary" className="text-[10px] font-semibold">
+                                    Assessment
+                                </Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="text-xs text-muted-foreground">
+                                Complete the assessment quiz to test your comprehension of the curriculum.
+                            </div>
+                            <Button
+                                asChild
+                                size="sm"
+                                className="gap-1.5 text-xs font-semibold shrink-0 w-full sm:w-auto"
+                                data-testid="start-assessment-cta"
+                            >
+                                <Link to={`/my-learning/${enrollmentId}/quizzes/${explicitQuizId}`}>
+                                    <span>Start Assessment</span>
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
                 )}
             </div>
         </div>

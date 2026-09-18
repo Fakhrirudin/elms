@@ -212,5 +212,66 @@ describe('LearningPlayerPage', () => {
             expect.any(Object)
         );
     });
+
+    it('does not render course assessment card when quiz_id is absent from search params', () => {
+        mockUseEnrollment.mockReturnValue({
+            data: mockEnrollment,
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        } as any);
+        mockUseCourseModules.mockReturnValue({
+            data: mockModules,
+            isLoading: false,
+        } as any);
+        mockUseLearningProgress.mockReturnValue({
+            data: mockProgress,
+            isLoading: false,
+        } as any);
+
+        render(
+            <MemoryRouter initialEntries={['/my-learning/7']}>
+                <Routes>
+                    <Route path="/my-learning/:enrollmentId" element={<LearningPlayerPage />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        expect(screen.queryByTestId('course-assessment-card')).not.toBeInTheDocument();
+    });
+
+    it('renders course assessment card with link when explicit quiz_id is provided in URL search params', () => {
+        mockUseEnrollment.mockReturnValue({
+            data: mockEnrollment,
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        } as any);
+        mockUseCourseModules.mockReturnValue({
+            data: mockModules,
+            isLoading: false,
+        } as any);
+        mockUseLearningProgress.mockReturnValue({
+            data: mockProgress,
+            isLoading: false,
+        } as any);
+
+        render(
+            <MemoryRouter initialEntries={['/my-learning/7?quiz_id=42']}>
+                <Routes>
+                    <Route path="/my-learning/:enrollmentId" element={<LearningPlayerPage />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        const card = screen.getByTestId('course-assessment-card');
+        expect(card).toBeInTheDocument();
+        expect(screen.getByText('Course Assessment')).toBeInTheDocument();
+
+        const ctaLink = screen.getByRole('link', { name: /start assessment/i });
+        expect(ctaLink).toHaveAttribute('href', '/my-learning/7/quizzes/42');
+    });
 });
 

@@ -28,6 +28,7 @@ describe('CourseDetailPage', () => {
         vi.clearAllMocks();
         mockUseAuth.mockReturnValue({
             user: { id: 1, name: 'Employee User', role: 'EMPLOYEE' } as any,
+            token: 'mock-token',
             isAuthenticated: true,
             isLoading: false,
             login: vi.fn(),
@@ -274,6 +275,7 @@ describe('CourseDetailPage', () => {
     it('renders informational notice without enrollment CTA for non-employee role', () => {
         mockUseAuth.mockReturnValue({
             user: { id: 2, name: 'Instructor Bob', role: 'INSTRUCTOR' } as any,
+            token: 'mock-token',
             isAuthenticated: true,
             isLoading: false,
             login: vi.fn(),

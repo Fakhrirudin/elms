@@ -9,6 +9,7 @@ import CourseCatalogPage from '@/features/courses/pages/CourseCatalogPage';
 import CourseDetailPage from '@/features/courses/pages/CourseDetailPage';
 import MyLearningPage from '@/features/learning/pages/MyLearningPage';
 import LearningPlayerPage from '@/features/learning/pages/LearningPlayerPage';
+import QuizPage from '@/features/assessments/pages/QuizPage';
 import NotFoundPage from './NotFoundPage';
 
 export const AppRoutes: React.FC = () => {
@@ -27,6 +28,7 @@ export const AppRoutes: React.FC = () => {
                     <Route path="/courses/:id" element={<CourseDetailPage />} />
                     <Route path="/my-learning" element={<MyLearningPage />} />
                     <Route path="/my-learning/:enrollmentId" element={<LearningPlayerPage />} />
+                    <Route path="/my-learning/:enrollmentId/quizzes/:quizId" element={<QuizPage />} />
                 </Route>
             </Route>
 

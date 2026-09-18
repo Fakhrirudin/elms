@@ -642,6 +642,31 @@ Domain pembelajaran dan pendaftaran kursus diimplementasikan secara modular pada
   * `LearningPlayerPage.tsx`: Halaman interaktif `/my-learning/:enrollmentId` untuk membaca materi, memantau kemajuan kurikulum, dan menandai materi selesai.
   * `CourseDetailPage.tsx`: Integrasi CTA dinamis role-aware ("Enroll in Course" vs "Continue Learning") via pencocokan `course_id` pada `GET /my-courses`.
 
+### Assessment Feature Architecture (Task 17)
+Domain evaluasi kuis bagi learner diimplementasikan secara modular pada `features/assessments/`:
+* **API Endpoints:**
+  * `GET /api/v1/quizzes/{quiz}`: Detail kuis dan butir soal/opsi. Backend menjamin keamanan dengan tidak mengekspos atribut `is_correct` kepada role `EMPLOYEE` sebelum submission.
+  * `POST /api/v1/quizzes/{quiz}/attempts`: Memulai attempt kuis (`201 Created`). Backend menghitung `attempt_number` dan memvalidasi `max_attempts` (melempar HTTP `422` jika kuota attempt habis).
+  * `POST /api/v1/attempts/{attempt}/submit`: Submit jawaban kuis (`{ answers: [{ question_id, option_id }] }`). Backend secara authoritative menghitung skor persentase `(correct / total) * 100`, mengevaluasi status `passed`, dan mengirim notifikasi `QUIZ_RESULT`.
+  * `GET /api/v1/attempts/{attempt}`: Review hasil kuis pasca-submit. Karena `submitted_at !== null`, backend mengekspos atribut `is_correct` pada opsi untuk kebutuhan review peserta.
+* **Services & Server State:**
+  * `quizService.ts`: HTTP client Axios untuk operasi kuis dan attempt.
+  * `useQuiz(quizId)`: TanStack Query hook untuk data definisi kuis (`queryKey: ['quiz', quizId]`).
+  * `useStartQuizAttempt()`: TanStack Query mutation hook untuk memulai attempt atau retry.
+  * `useQuizAttempt(attemptId)`: TanStack Query hook untuk detail review attempt (`queryKey: ['quiz-attempt', attemptId]`).
+  * `useSubmitQuizAttempt()`: TanStack Query mutation hook untuk submit jawaban dengan invalidasi terarah pada cache yang aktif: `['quiz-attempt', attemptId]`, `['quiz', quizId]`, `['learning-progress', enrollmentId]`, `['enrollment', enrollmentId]`, dan `['dashboard']`.
+* **Components & UX:**
+  * `QuizIntroCard.tsx`: Tampilan aturan kuis, passing grade, batas maksimum attempt, dan aksi memulai attempt.
+  * `QuestionItem.tsx`: Renderer butir pertanyaan interaktif dengan radio input opsi pilihan ganda tunggal tanpa komputasi client-side.
+  * `QuizResultCard.tsx`: Tampilan hasil evaluasi authoritative server (skor, passing grade, badge kelulusan, tombol retake, dan toggle review).
+  * `QuizReviewViewer.tsx`: Review pembahasan pasca-submit yang membandingkan pilihan peserta dengan kunci jawaban resmi backend.
+  * `QuizSkeleton.tsx`: Placeholder visual saat data kuis sedang dimuat.
+  * `QuizPage.tsx`: Halaman orchestrator `/my-learning/:enrollmentId/quizzes/:quizId` yang mengelola alur 3 fase (Intro → Active Attempt → Result/Review) secara murni in-memory tanpa browser storage.
+* **Integrasi & Batasan Arsitektur:**
+  * Route canonical: `/my-learning/:enrollmentId/quizzes/:quizId` beroperasi dalam konteks enrollment aktif.
+  * Penemuan `quizId`: `LearningPlayerPage` tidak menebak atau melakukan hardcode mapping course-to-quiz. CTA evaluasi hanya dimunculkan apabila `quiz_id` eksplisit tersedia (misalnya melalui query parameter `?quiz_id=...` dari deep-link).
+  * State reload: Tidak menggunakan `localStorage`/`sessionStorage`. Refresh halaman aman mereset ke fase Intro tanpa auto-attempt.
+
 ---
 
 ## 14. Frontend State Management

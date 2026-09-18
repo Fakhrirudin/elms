@@ -22,7 +22,7 @@ describe('EnrolledCourseCard', () => {
             estimated_duration: 12,
             status: 'PUBLISHED',
             published_at: '2026-02-01T10:00:00Z',
-            instructors: [{ id: 5, name: 'Senior Diplomat Maria' }],
+            instructors: [{ id: 5, name: 'Senior Diplomat Maria', email: 'maria@elms.test' }],
         },
     };
 
