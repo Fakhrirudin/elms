@@ -5,13 +5,15 @@ import EnrollmentStatusBadge from './EnrollmentStatusBadge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Calendar, ArrowRight, Clock } from 'lucide-react';
+import { BookOpen, Calendar, ArrowRight, Clock, Award } from 'lucide-react';
+import { Certificate } from '@/features/certificates/types';
 
 interface EnrolledCourseCardProps {
     enrollment: Enrollment;
+    certificate?: Certificate | null;
 }
 
-export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollment }) => {
+export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollment, certificate }) => {
     const course = enrollment.course;
 
     const formattedEnrolledDate = enrollment.enrolled_at
@@ -98,13 +100,27 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollme
             </CardContent>
 
             {/* Card Footer with CTA */}
-            <CardFooter className="p-4 sm:p-5 pt-2">
+            <CardFooter className="p-4 sm:p-5 pt-2 flex flex-col gap-2">
                 <Button asChild className="w-full text-xs font-semibold gap-1.5">
                     <Link to={`/my-learning/${enrollment.id}`}>
                         <span>{enrollment.status === 'COMPLETED' ? 'Review Course' : 'Continue Learning'}</span>
                         <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                 </Button>
+                {certificate && (
+                    <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
+                        data-testid="card-view-certificate-btn"
+                    >
+                        <Link to={`/certificates/${certificate.id}`}>
+                            <Award className="h-3.5 w-3.5" />
+                            <span>View Certificate</span>
+                        </Link>
+                    </Button>
+                )}
             </CardFooter>
         </Card>
     );

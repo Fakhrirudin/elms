@@ -4,6 +4,8 @@ import useEnrollment from '../hooks/useEnrollment';
 import useLearningProgress from '../hooks/useLearningProgress';
 import useCompleteMaterial from '../hooks/useCompleteMaterial';
 import useCourseModules from '@/features/courses/hooks/useCourseModules';
+import useMyCertificates from '@/features/certificates/hooks/useMyCertificates';
+import useIssueCertificate from '@/features/certificates/hooks/useIssueCertificate';
 import { Material } from '@/features/courses/types';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
 import MaterialListItem from '../components/player/MaterialListItem';
@@ -52,7 +54,20 @@ export const LearningPlayerPage: React.FC = () => {
     // 4. Material Completion Mutation
     const completeMaterialMutation = useCompleteMaterial();
 
-    // 5. In-memory Completed Materials & Selected Material State
+    // 5. Authoritative Certificate Data & Issuance Mutation
+    const { data: certificatesData } = useMyCertificates();
+    const issueCertificateMutation = useIssueCertificate();
+
+    const existingCertificate = certificatesData?.certificates?.find(
+        (c) => c.enrollment_id === Number(enrollmentId)
+    );
+
+    const handleRequestCertificate = () => {
+        if (!enrollmentId) return;
+        issueCertificateMutation.mutate(enrollmentId);
+    };
+
+    // 6. In-memory Completed Materials & Selected Material State
     const [completedMaterialIds, setCompletedMaterialIds] = useState<Set<number>>(new Set());
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
@@ -255,6 +270,109 @@ export const LearningPlayerPage: React.FC = () => {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Certificate Section per approved 3-tier strategy */}
+            {existingCertificate ? (
+                <Card className="border-border bg-card shadow-xs overflow-hidden" data-testid="certificate-earned-card">
+                    <CardHeader className="p-4 sm:p-5 pb-3 bg-primary/5 border-b border-border/50">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
+                                    Credential
+                                </span>
+                                <CardTitle className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-2">
+                                    <Award className="h-4 w-4 text-primary" />
+                                    <span>ELMS Certificate Earned</span>
+                                </CardTitle>
+                                <CardDescription className="text-xs text-muted-foreground">
+                                    Your verified Certificate of Completion has been issued for this course.
+                                </CardDescription>
+                            </div>
+                            <Badge variant="secondary" className="font-mono text-[10px] font-semibold">
+                                {existingCertificate.certificate_number}
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="text-xs text-muted-foreground">
+                            Issued on {existingCertificate.issued_at ? new Date(existingCertificate.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Official Record'}.
+                        </div>
+                        <Button
+                            asChild
+                            size="sm"
+                            className="gap-1.5 text-xs font-semibold shrink-0 w-full sm:w-auto"
+                            data-testid="view-certificate-cta"
+                        >
+                            <Link to={`/certificates/${existingCertificate.id}`}>
+                                <Award className="h-3.5 w-3.5" />
+                                <span>View Certificate</span>
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : currentStatus === 'COMPLETED' ? (
+                <Card className="border-border bg-card shadow-xs overflow-hidden" data-testid="request-certificate-card">
+                    <CardHeader className="p-4 sm:p-5 pb-3 bg-primary/5 border-b border-border/50">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
+                                    Course Completion
+                                </span>
+                                <CardTitle className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-2">
+                                    <Award className="h-4 w-4 text-primary" />
+                                    <span>Certificate Available</span>
+                                </CardTitle>
+                                <CardDescription className="text-xs text-muted-foreground">
+                                    Course requirements completed. You may now request your ELMS Certificate of Completion.
+                                </CardDescription>
+                            </div>
+                            <Badge variant="secondary" className="text-[10px] font-semibold">
+                                Ready
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-5 space-y-4">
+                        {issueCertificateMutation.isError && (
+                            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-xs space-y-1" data-testid="request-certificate-error">
+                                <div className="font-semibold flex items-center gap-1.5">
+                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                    <span>Cannot Issue Certificate</span>
+                                </div>
+                                <p>
+                                    {issueCertificateMutation.error?.response?.data?.message ||
+                                        issueCertificateMutation.error?.message ||
+                                        'All mandatory materials and published quizzes must be completed before issuing a certificate.'}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="text-xs text-muted-foreground">
+                                Request your electronic certificate. The backend will verify all completion criteria.
+                            </div>
+                            <Button
+                                size="sm"
+                                onClick={handleRequestCertificate}
+                                disabled={issueCertificateMutation.isPending}
+                                className="gap-1.5 text-xs font-semibold shrink-0 w-full sm:w-auto"
+                                data-testid="request-certificate-btn"
+                            >
+                                {issueCertificateMutation.isPending ? (
+                                    <>
+                                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                        <span>Issuing...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Award className="h-3.5 w-3.5" />
+                                        <span>Request Certificate</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : null}
 
             {/* Active Material Content Viewer (if material is selected) */}
             {selectedMaterial && (

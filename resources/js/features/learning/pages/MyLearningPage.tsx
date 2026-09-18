@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useMyCourses from '../hooks/useMyCourses';
+import useMyCertificates from '@/features/certificates/hooks/useMyCertificates';
 import { EnrollmentStatus } from '../types';
 import EnrolledCourseCard from '../components/EnrolledCourseCard';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +43,13 @@ export const MyLearningPage: React.FC = () => {
         status: statusFilter === 'ALL' ? undefined : statusFilter,
     });
 
+    const { data: certificatesData } = useMyCertificates();
+    const certificates = certificatesData?.certificates || [];
+    const certificatesByEnrollmentId = new Map<number, typeof certificates[0]>();
+    certificates.forEach((cert) => {
+        certificatesByEnrollmentId.set(cert.enrollment_id, cert);
+    });
+
     const handleTabChange = (tab: FilterTab) => {
         setStatusFilter(tab);
         setPage(1);
@@ -77,8 +85,8 @@ export const MyLearningPage: React.FC = () => {
                             key={tab.value}
                             onClick={() => handleTabChange(tab.value)}
                             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${isActive
-                                    ? 'bg-card text-foreground shadow-xs font-semibold'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-card/40'
+                                ? 'bg-card text-foreground shadow-xs font-semibold'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-card/40'
                                 }`}
                         >
                             {tab.label}
@@ -175,7 +183,11 @@ export const MyLearningPage: React.FC = () => {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {enrollments.map((enrollment) => (
-                            <EnrolledCourseCard key={enrollment.id} enrollment={enrollment} />
+                            <EnrolledCourseCard
+                                key={enrollment.id}
+                                enrollment={enrollment}
+                                certificate={certificatesByEnrollmentId.get(enrollment.id)}
+                            />
                         ))}
                     </div>
 

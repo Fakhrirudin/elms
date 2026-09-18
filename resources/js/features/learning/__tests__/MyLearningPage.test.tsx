@@ -4,13 +4,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import MyLearningPage from '../pages/MyLearningPage';
 import useMyCourses from '../hooks/useMyCourses';
+import useMyCertificates from '@/features/certificates/hooks/useMyCertificates';
 
 vi.mock('../hooks/useMyCourses');
+vi.mock('@/features/certificates/hooks/useMyCertificates');
+
 const mockUseMyCourses = vi.mocked(useMyCourses);
+const mockUseMyCertificates = vi.mocked(useMyCertificates);
 
 describe('MyLearningPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseMyCertificates.mockReturnValue({
+            data: { certificates: [], meta: { current_page: 1, last_page: 1, per_page: 15, total: 0, from: null, to: null } },
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        } as any);
     });
 
     const mockEnrollments = [
@@ -146,6 +157,50 @@ describe('MyLearningPage', () => {
         expect(mockUseMyCourses).toHaveBeenCalledWith(
             expect.objectContaining({ status: 'IN_PROGRESS' })
         );
+    });
+
+    it('renders View Certificate button on card when course has matching certificate', () => {
+        mockUseMyCourses.mockReturnValue({
+            data: {
+                enrollments: mockEnrollments,
+                meta: { current_page: 1, per_page: 9, total: 2, last_page: 1 },
+            },
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+            isFetching: false,
+        } as any);
+        mockUseMyCertificates.mockReturnValue({
+            data: {
+                certificates: [
+                    {
+                        id: 77,
+                        certificate_number: 'ELMS-2026-000077',
+                        enrollment_id: 2, // Matches enrollment 2
+                        course: { id: 11, title: 'Foreign Policy Analysis', slug: 'foreign-policy' },
+                        employee: { id: 1, name: 'Siti Rahmawati', nip: null },
+                        issued_at: '2026-09-16T10:00:00Z',
+                        created_at: '2026-09-16T10:00:00Z',
+                    },
+                ],
+                meta: { current_page: 1, last_page: 1, per_page: 15, total: 1, from: 1, to: 1 },
+            },
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        } as any);
+
+        render(
+            <MemoryRouter>
+                <MyLearningPage />
+            </MemoryRouter>
+        );
+
+        const viewCertBtn = screen.getByTestId('card-view-certificate-btn');
+        expect(viewCertBtn).toBeInTheDocument();
+        expect(viewCertBtn).toHaveAttribute('href', '/certificates/77');
     });
 });
 

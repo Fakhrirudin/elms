@@ -10,6 +10,8 @@ import CourseDetailPage from '@/features/courses/pages/CourseDetailPage';
 import MyLearningPage from '@/features/learning/pages/MyLearningPage';
 import LearningPlayerPage from '@/features/learning/pages/LearningPlayerPage';
 import QuizPage from '@/features/assessments/pages/QuizPage';
+import MyCertificatesPage from '@/features/certificates/pages/MyCertificatesPage';
+import CertificateDetailPage from '@/features/certificates/pages/CertificateDetailPage';
 import NotFoundPage from './NotFoundPage';
 
 export const AppRoutes: React.FC = () => {
@@ -29,6 +31,8 @@ export const AppRoutes: React.FC = () => {
                     <Route path="/my-learning" element={<MyLearningPage />} />
                     <Route path="/my-learning/:enrollmentId" element={<LearningPlayerPage />} />
                     <Route path="/my-learning/:enrollmentId/quizzes/:quizId" element={<QuizPage />} />
+                    <Route path="/certificates" element={<MyCertificatesPage />} />
+                    <Route path="/certificates/:certificateId" element={<CertificateDetailPage />} />
                 </Route>
             </Route>
 

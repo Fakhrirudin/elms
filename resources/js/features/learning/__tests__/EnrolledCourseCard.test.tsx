@@ -69,5 +69,32 @@ describe('EnrolledCourseCard', () => {
         expect(reviewBtn).toBeInTheDocument();
         expect(reviewBtn).toHaveAttribute('href', '/my-learning/42');
     });
+
+    it('renders View Certificate button when certificate is provided', () => {
+        const completedEnrollment: Enrollment = {
+            ...mockEnrollment,
+            status: 'COMPLETED',
+        };
+        const mockCert = {
+            id: 99,
+            certificate_number: 'ELMS-2026-000099',
+            enrollment_id: 42,
+            course: { id: 10, title: 'Protocol', slug: 'protocol' },
+            employee: { id: 1, name: 'Siti', nip: null },
+            issued_at: '2026-09-16T10:00:00Z',
+            created_at: '2026-09-16T10:00:00Z',
+        };
+
+        render(
+            <MemoryRouter>
+                <EnrolledCourseCard enrollment={completedEnrollment} certificate={mockCert} />
+            </MemoryRouter>
+        );
+
+        const viewCertBtn = screen.getByTestId('card-view-certificate-btn');
+        expect(viewCertBtn).toBeInTheDocument();
+        expect(viewCertBtn).toHaveAttribute('href', '/certificates/99');
+        expect(screen.getByText('View Certificate')).toBeInTheDocument();
+    });
 });
 

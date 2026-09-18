@@ -667,6 +667,32 @@ Domain evaluasi kuis bagi learner diimplementasikan secara modular pada `feature
   * Penemuan `quizId`: `LearningPlayerPage` tidak menebak atau melakukan hardcode mapping course-to-quiz. CTA evaluasi hanya dimunculkan apabila `quiz_id` eksplisit tersedia (misalnya melalui query parameter `?quiz_id=...` dari deep-link).
   * State reload: Tidak menggunakan `localStorage`/`sessionStorage`. Refresh halaman aman mereset ke fase Intro tanpa auto-attempt.
 
+### Certificates Feature Architecture (Task 18)
+Domain sertifikasi bagi learner diimplementasikan secara modular pada `features/certificates/`:
+* **API Endpoints:**
+  * `POST /api/v1/enrollments/{enrollment}/certificate`: Menerbitkan sertifikat secara idempoten setelah seluruh materi mandatory selesai dan seluruh kuis yang dipublikasikan lulus (melempar HTTP 422 jika kriteria belum terpenuhi; mengembalikan HTTP 200 jika sudah terbit, HTTP 201 jika baru diterbitkan).
+  * `GET /api/v1/my-certificates`: Daftar sertifikat milik employee yang terotentikasi berpaginasi.
+  * `GET /api/v1/certificates/{certificate}`: Detail sertifikat terverifikasi dengan proteksi hak akses (kebijakan backend hanya mengizinkan pemilik sertifikat, instruktur terkait, atau admin; melempar HTTP 403 jika diakses oleh employee lain).
+* **Services & Server State:**
+  * `certificateService.ts`: Modul HTTP client Axios untuk operasi sertifikat.
+  * `useMyCertificates(page)`: TanStack Query hook daftar sertifikat pengguna (`queryKey: ['my-certificates', page]`, `staleTime: 2m`).
+  * `useCertificateDetail(id)`: TanStack Query hook detail sertifikat (`queryKey: ['certificate', id]`, `staleTime: 5m`).
+  * `useIssueCertificate()`: TanStack Query mutation hook penerbitan sertifikat dengan invalidasi terarah: `['my-certificates']`, `['dashboard']`, `['enrollment', id]`, dan `['learning-progress', id]`.
+* **Components & UX:**
+  * `CertificateCard.tsx`: Komponen kartu ringkasan sertifikat dengan nomor identifikasi unik, tanggal penerbitan, dan tautan detail.
+  * `CertificateDocument.tsx`: Tampilan dokumen ELMS Certificate of Completion berstandar profesional dengan dukungan cetak browser native (`window.print()`) dan styling `@media print` yang menyembunyikan kontrol interaktif.
+  * `CertificateEmptyState.tsx`: Tampilan visual informatif ketika employee belum memiliki sertifikat yang diterbitkan.
+  * `MyCertificatesPage.tsx`: Halaman katalog sertifikat `/certificates` bagi learner.
+  * `CertificateDetailPage.tsx`: Halaman detail sertifikat `/certificates/:certificateId` dengan penanganan authoritative backend untuk state 403 Forbidden dan 404 Not Found.
+* **Integrasi Pembelajaran & Strategi 3-Tier Ketersediaan:**
+  * **Tier 1 (Sertifikat Sudah Ada):** `LearningPlayerPage` dan `EnrolledCourseCard` menampilkan status "ELMS Certificate Earned" dan tombol "View Certificate" langsung ke `/certificates/:certificateId`.
+  * **Tier 2 (Belum Ada & Status COMPLETED):** `LearningPlayerPage` menampilkan tombol "Request Certificate" yang memanggil `POST /api/v1/enrollments/{enrollment}/certificate`. Kelayakan dievaluasi murni oleh backend (melempar HTTP 422 dengan pesan validasi backend jika kuis belum lulus).
+  * **Tier 3 (Belum Ada & Status Belum COMPLETED):** Tidak menampilkan tombol Request Certificate dan tidak melakukan kalkulasi kesiapan di client.
+* **Batasan & Non-Existent Features:**
+  * Tidak menggunakan library PDF client-side. Cetak dan simpan PDF mengandalkan kemampuan bawaan browser (`window.print()`).
+  * Tidak membuat endpoint atau QR code verifikasi palsu karena tidak didukung oleh backend.
+  * Menggunakan terminologi netral simulasi ELMS (*"ELMS Certificate"*, *"Certificate of Completion"*, *"Certificate Details"*).
+
 ---
 
 ## 14. Frontend State Management
