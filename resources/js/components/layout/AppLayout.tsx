@@ -77,6 +77,16 @@ export const AppLayout: React.FC = () => {
                                     </Link>
                                 </>
                             )}
+                            <Link
+                                to="/reports"
+                                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                                    location.pathname.startsWith('/reports')
+                                        ? 'bg-muted text-foreground font-semibold'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                            >
+                                Reports
+                            </Link>
                         </nav>
                     </div>
 

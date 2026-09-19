@@ -693,6 +693,38 @@ Domain sertifikasi bagi learner diimplementasikan secara modular pada `features/
   * Tidak membuat endpoint atau QR code verifikasi palsu karena tidak didukung oleh backend.
   * Menggunakan terminologi netral simulasi ELMS (*"ELMS Certificate"*, *"Certificate of Completion"*, *"Certificate Details"*).
 
+### Reports & Analytics Feature Architecture (Task 19)
+Domain pelaporan dan analitik performa pembelajaran diimplementasikan secara modular pada `features/reports/`:
+* **API Endpoints:**
+  * `GET /api/v1/reports/courses`: Statistik performa kursus berpaginasi (total pendaftaran, pembelajar aktif, kelulusan, dan persentase kelulusan). Hak akses: `SUPER_ADMIN`, `LEARNING_ADMIN`, `INSTRUCTOR` (dibatasi pada kursus yang diampu). Employee dibatasi dengan HTTP 403.
+  * `GET /api/v1/reports/learning`: Laporan progres pembelajaran peserta berpaginasi (progres kurikulum %, status pendaftaran, linimasa pendaftaran/kelulusan). Hak akses: seluruh role terotentikasi. Backend otomatis membatasi record `EMPLOYEE` hanya pada enrollment miliknya sendiri (`user_id = $user->id`), instruktur pada kursus yang diampu, dan administrator secara menyeluruh.
+  * `GET /api/v1/reports/quiz`: Statistik evaluasi kuis berpaginasi (total percobaan, kelulusan, tingkat kelulusan %, skor rata-rata, skor minimum/maksimum). Hak akses: `SUPER_ADMIN`, `LEARNING_ADMIN`, `INSTRUCTOR` (dibatasi pada kuis dalam kursus yang diampu). Employee dibatasi dengan HTTP 403.
+* **Prinsip Zero Frontend Aggregation (Authoritative Backend Data):**
+  - Frontend sama sekali tidak melakukan kalkulasi agregat atau rata-rata lokal dari baris yang terpaginasi.
+  - Seluruh metrik analitik (`completion_rate`, `progress`, `pass_rate`, `average_score`, `min_score`, `max_score`) disajikan murni dari field per-baris resmi backend.
+  - Indikator jumlah total level laporan murni mengambil metadata paginasi backend (`meta.total`).
+  - Tidak membuat visualisasi histogram atau distribusi skor sintetis.
+* **Services & Server State:**
+  * `reportService.ts`: Modul HTTP client Axios untuk operasi ketiga endpoint laporan.
+  * `useCourseReport(params)`: TanStack Query hook untuk Course Report (`queryKey: ['reports', 'courses', params]`, `staleTime: 2m`).
+  * `useLearningReport(params)`: TanStack Query hook untuk Learning Report (`queryKey: ['reports', 'learning', params]`, `staleTime: 2m`).
+  * `useQuizReport(params)`: TanStack Query hook untuk Quiz Report (`queryKey: ['reports', 'quiz', params]`, `staleTime: 2m`).
+* **Components & UX:**
+  * `ReportNavTabs.tsx`: Tab navigasi sub-halaman yang sadar role (hanya menampilkan tab Learning untuk Employee; menampilkan ketiga tab untuk Instruktur dan Administrator).
+  * `ReportHeader.tsx`: Header laporan dengan judul, badge lingkup otorisasi (Organization Scope, Assigned Courses, atau Personal Record), dan badge jumlah total dari `meta.total`.
+  * `ReportFilterBar.tsx`: Kontrol filter status pendaftaran/kursus dan selektor ukuran halaman (`10`, `15`, `25`, `50`).
+  * `CourseReportTable.tsx`: Tabel data performa kursus dengan badge status dan progress bar visual completion rate.
+  * `LearningReportTable.tsx`: Tabel data progres pembelajaran dengan status badge, visual progress bar, dan kolom employee yang disederhanakan pada mode personal learner.
+  * `QuizReportTable.tsx`: Tabel data performa kuis dengan passing grade, total percobaan, rasio lulus/gagal, tingkat kelulusan, skor rata-rata, dan skor min/max.
+  * `ReportSkeleton.tsx` & `ReportEmptyState.tsx`: Placeholder visual loading dan state kosong yang informatif.
+  * `ReportAccessDenied.tsx`: Tampilan responsif 403 Forbidden dengan penjelasan hak akses dan tombol kembali ke laporan progres pembelajaran.
+* **Routing & Navigasi:**
+  * `/reports`: Halaman orkestrator yang mengarahkan secara otomatis berdasarkan role (`EMPLOYEE` diarahkan ke `/reports/learning`; `INSTRUCTOR`/`ADMIN` diarahkan ke `/reports/courses`).
+  * `/reports/courses`: Halaman Laporan Performa Kursus (akses employee dicegat dan menampilkan `ReportAccessDenied`).
+  * `/reports/learning`: Halaman Laporan Progres Pembelajaran (dapat diakses seluruh role dengan cakupan data sesuai otorisasi backend).
+  * `/reports/quiz`: Halaman Laporan Performa Kuis (akses employee dicegat dan menampilkan `ReportAccessDenied`).
+  * `AppLayout.tsx`: Tautan navigasi utama `"Reports"` dimunculkan untuk seluruh pengguna terotentikasi.
+
 ---
 
 ## 14. Frontend State Management
