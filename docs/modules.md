@@ -34,7 +34,7 @@ Notifications
 | Assessments    | Quiz, question, attempt, scoring   | Yes    |
 | Certificates   | Certificate generation             | Yes    |
 | Reports        | Dashboard dan learning reports     | Yes    |
-| Notifications  | Notification infrastructure        | Future |
+| Notifications  | Notification infrastructure        | Yes    |
 
 ---
 
@@ -1158,7 +1158,7 @@ ELMS
 │   └── Dashboard / Statistics
 │
 └── Notifications
-    └── Future Enhancement
+    └── In-App Notifications
 ```
 
 Dokumen ini menjadi acuan pembagian responsibility module selama pengembangan ELMS.
