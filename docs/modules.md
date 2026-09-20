@@ -265,23 +265,35 @@ DELETE /api/v1/materials/{material}
 PATCH  /api/v1/modules/{module}/materials/reorder
 ```
 
-## Rules
+## Rules & Authoring Permissions
 
-* Course harus memiliki category.
+* Course harus memiliki category (`category_id`).
 * Course memiliki satu atau lebih module.
 * Module dimiliki oleh satu course.
 * Material dimiliki oleh satu module.
 * Material memiliki type:
-
-  * TEXT
-  * PDF
-  * VIDEO
-* `sort_order` digunakan untuk menentukan urutan.
-* Hanya course PUBLISHED yang tersedia untuk employee.
-* Instructor hanya dapat mengelola course yang ditugaskan kepadanya.
-* Learning Admin dapat mengelola course sesuai permission.
-
----
+  * TEXT (reading markdown/content)
+  * PDF (document path/url)
+  * VIDEO (video url)
+* `sort_order` digunakan untuk menentukan urutan module dan material.
+* **Authoring Workflow & Lifecycle**:
+  * Status transition strictly: `DRAFT → PUBLISHED → ARCHIVED`.
+  * Tidak ada status "Revert to Draft".
+  * Course yang baru dibuat selalu diawali dengan status `DRAFT`.
+  * Hanya course berstatus `PUBLISHED` yang muncul di catalog publik dan dapat di-enroll oleh `EMPLOYEE`.
+  * Course berstatus `ARCHIVED` tidak dapat di-enroll baru, namun riwayat belajar dan enrollment existing tetap dipertahankan.
+* **Role-Based Authoring Matrix**:
+  * `SUPER_ADMIN` & `LEARNING_ADMIN`: Full course management (seluruh course lintas organisasi, update status ke PUBLISHED/ARCHIVED, penugasan instructor).
+  * `INSTRUCTOR`: Dapat membuat course baru (otomatis ditugaskan sebagai instructor), mengedit metadata course yang ditugaskan kepadanya, mengelola struktur modul & material pada course miliknya. Instructor **TIDAK** dapat mempublikasikan (publish) maupun mengarsipkan (archive) course, dan tidak dapat mengelola penugasan instructor lain.
+  * `EMPLOYEE`: Memiliki hak akses catalog & learning player saja; tidak memiliki akses ke authoring dashboard.
+* **Frontend Authoring Interfaces**:
+  * `/admin/courses`: Authoring list dashboard dengan filter status, kategori, pencarian kata kunci, serta aksi status.
+  * `/admin/courses/create`: Form inisiasi course draft.
+  * `/admin/courses/:courseId/edit`: Course editor terpadu dengan 4 tab:
+    1. *Course Structure*: Pengelolaan outline modul & materi (CRUD module & material).
+    2. *Course Details*: Edit judul, durasi, deskripsi, thumbnail, dan kategori.
+    3. *Lifecycle & Status*: Kontrol transisi status (Publish & Archive dengan konfirmasi modal; hanya Admin).
+    4. *Instructors*: Penugasan instruktur (hanya Admin).
 
 # 6. Learning Module
 

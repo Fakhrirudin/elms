@@ -30,6 +30,8 @@ class CourseResource extends JsonResource
             'status' => $this->status,
             'published_at' => $this->published_at?->toISOString(),
             'instructors' => CourseInstructorResource::collection($this->whenLoaded('instructors')),
+            'modules_count' => $this->when(isset($this->modules_count), (int) $this->modules_count),
+            'materials_count' => $this->when(isset($this->materials_count), (int) $this->materials_count),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

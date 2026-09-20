@@ -53,6 +53,20 @@ export const AppLayout: React.FC = () => {
                             >
                                 Courses
                             </Link>
+                            {(user?.role === 'SUPER_ADMIN' ||
+                                user?.role === 'LEARNING_ADMIN' ||
+                                user?.role === 'INSTRUCTOR') && (
+                                <Link
+                                    to="/admin/courses"
+                                    className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                                        location.pathname.startsWith('/admin/courses')
+                                            ? 'bg-muted text-foreground font-semibold'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    }`}
+                                >
+                                    Manage Courses
+                                </Link>
+                            )}
                             {user?.role === 'EMPLOYEE' && (
                                 <>
                                     <Link

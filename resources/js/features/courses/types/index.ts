@@ -36,6 +36,8 @@ export interface Course {
     status: CourseStatus;
     published_at?: string | null;
     instructors?: CourseInstructor[];
+    modules_count?: number;
+    materials_count?: number;
     created_at?: string;
     updated_at?: string;
 }
@@ -75,6 +77,8 @@ export interface CourseFilterParams {
     per_page?: number;
     search?: string;
     category_id?: number | string;
+    status?: CourseStatus | string;
+    instructor_id?: number | string;
     sort_by?: CourseSortBy;
     sort_direction?: CourseSortDirection;
 }
@@ -84,3 +88,60 @@ export interface CourseListResult {
     meta: PaginationMeta;
 }
 
+export interface CreateCoursePayload {
+    title: string;
+    category_id: number;
+    description?: string | null;
+    thumbnail?: string | null;
+    estimated_duration: number;
+}
+
+export interface UpdateCoursePayload {
+    title?: string;
+    category_id?: number;
+    description?: string | null;
+    thumbnail?: string | null;
+    estimated_duration?: number;
+}
+
+export interface CreateModulePayload {
+    title: string;
+    description?: string | null;
+    sort_order?: number;
+}
+
+export interface UpdateModulePayload {
+    title?: string;
+    description?: string | null;
+    sort_order?: number;
+}
+
+export interface CreateMaterialPayload {
+    title: string;
+    type: MaterialType;
+    content?: string | null;
+    file_path?: string | null;
+    video_url?: string | null;
+    sort_order?: number;
+    is_mandatory?: boolean;
+}
+
+export interface UpdateMaterialPayload {
+    title?: string;
+    type?: MaterialType;
+    content?: string | null;
+    file_path?: string | null;
+    video_url?: string | null;
+    sort_order?: number;
+    is_mandatory?: boolean;
+}
+
+export interface InstructorCandidate {
+    id: number;
+    name: string;
+    email: string;
+    department?: {
+        id: number;
+        name: string;
+    } | null;
+}

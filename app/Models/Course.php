@@ -77,6 +77,14 @@ class Course extends Model
     }
 
     /**
+     * @return HasManyThrough<Material, Module, $this>
+     */
+    public function materials(): HasManyThrough
+    {
+        return $this->hasManyThrough(Material::class, Module::class);
+    }
+
+    /**
      * @return HasMany<Enrollment, $this>
      */
     public function enrollments(): HasMany

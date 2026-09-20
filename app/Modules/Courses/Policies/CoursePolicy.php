@@ -36,19 +36,24 @@ class CoursePolicy
 
     /**
      * Determine whether the user can create courses.
+     * Admins and Instructors are authorized to create courses.
      */
     public function create(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $this->isAdmin($user) || $user->hasRole(Role::INSTRUCTOR);
     }
 
     /**
      * Determine whether the user can update the course metadata.
-     * Per Decision 4: Only Admins can update course metadata in Task 04.
+     * Admins can update any course; Instructors can only update assigned courses.
      */
     public function update(User $user, Course $course): bool
     {
-        return $this->isAdmin($user);
+        if ($this->isAdmin($user)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::INSTRUCTOR) && $this->isAssignedInstructor($user, $course);
     }
 
     /**
@@ -61,6 +66,7 @@ class CoursePolicy
 
     /**
      * Determine whether the user can update the course status.
+     * Publishing and archiving are strictly reserved for Admins.
      */
     public function updateStatus(User $user, Course $course): bool
     {
@@ -78,5 +84,10 @@ class CoursePolicy
     private function isAdmin(User $user): bool
     {
         return $user->hasRole(Role::SUPER_ADMIN, Role::LEARNING_ADMIN);
+    }
+
+    private function isAssignedInstructor(User $user, Course $course): bool
+    {
+        return $course->instructors()->where('users.id', $user->id)->exists();
     }
 }

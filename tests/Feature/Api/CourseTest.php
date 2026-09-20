@@ -273,11 +273,30 @@ class CourseTest extends TestCase
         $this->assertDatabaseHas('courses', ['id' => $course->id, 'title' => 'Updated Course Title']);
     }
 
-    public function test_instructor_cannot_update_course_metadata(): void
+    public function test_instructor_can_update_assigned_course_metadata(): void
     {
         $instructor = $this->userWithRole(Role::INSTRUCTOR);
-        $course = Course::factory()->create();
+        $course = Course::factory()->create(['title' => 'Original Title']);
         $course->instructors()->attach($instructor->id);
+
+        $response = $this->withToken($this->tokenFor($instructor))->putJson("/api/v1/courses/{$course->id}", [
+            'title' => 'Instructor Updated Title',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'data' => [
+                'title' => 'Instructor Updated Title',
+            ],
+        ]);
+        $this->assertDatabaseHas('courses', ['id' => $course->id, 'title' => 'Instructor Updated Title']);
+    }
+
+    public function test_instructor_cannot_update_unassigned_course_metadata(): void
+    {
+        $instructor = $this->userWithRole(Role::INSTRUCTOR);
+        $course = Course::factory()->create(['title' => 'Other Course']);
 
         $response = $this->withToken($this->tokenFor($instructor))->putJson("/api/v1/courses/{$course->id}", [
             'title' => 'Instructor Hacked Title',

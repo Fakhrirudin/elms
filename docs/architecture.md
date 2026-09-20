@@ -622,6 +622,30 @@ Katalog kursus dan detail kurikulum diimplementasikan secara modular pada `featu
   * `CourseCatalogPage.tsx`: Halaman katalog `/courses` dengan search debounce, category filter pills, sorting selector, responsive course card grid, loading skeletons, dan pagination controls.
   * `CourseDetailPage.tsx`: Halaman detail `/courses/:id` dengan hero metadata banner, thumbnail fallback, dan silabus terstruktur via `ModuleAccordion` & `MaterialItem`.
 
+### Course Authoring Architecture (Task 21)
+Modul manajemen dan authoring kursus bagi Administrator (`SUPER_ADMIN`, `LEARNING_ADMIN`) dan `INSTRUCTOR` diimplementasikan secara terpadu pada `features/courses/`:
+* **API Endpoints:**
+  * `GET /api/v1/courses`: Katalog kursus berpaginasi dengan relasi `modules_count` dan `materials_count` melalui `withCount()`.
+  * `POST /api/v1/courses`: Inisiasi kursus berstatus `DRAFT` (Instructor otomatis ditugaskan sebagai course instructor).
+  * `PUT /api/v1/courses/{course}`: Edit metadata kursus (diizinkan untuk Admin dan Assigned Instructor).
+  * `PATCH /api/v1/courses/{course}/status`: Transisi siklus hidup (`DRAFT → PUBLISHED → ARCHIVED`; strictly restricted untuk Admin; no "Revert to Draft").
+  * `POST /api/v1/courses/{course}/modules`, `PUT /api/v1/modules/{module}`, `DELETE /api/v1/modules/{module}`: Pengelolaan outline silabus kurikulum.
+  * `POST /api/v1/modules/{module}/materials`, `PUT /api/v1/materials/{material}`, `DELETE /api/v1/materials/{material}`: Pengelolaan materi belajar (`TEXT`, `VIDEO`, `PDF`) beserta toggle mandatory.
+  * `POST /api/v1/courses/{course}/instructors`, `DELETE /api/v1/courses/{course}/instructors/{user}`: Penugasan instruktur (Admin-only).
+  * `GET /api/v1/users?role=INSTRUCTOR`: Pemilihan kandidat instruktur untuk penugasan (Admin-only).
+* **Services & Server State:**
+  * `courseService.ts`: Penambahan metode authoring (`createCourse`, `updateCourse`, `updateCourseStatus`, `deleteCourse`, `createModule`, `updateModule`, `deleteModule`, `createMaterial`, `updateMaterial`, `deleteMaterial`, `getCourseInstructors`, `assignInstructor`, `removeInstructor`, `getInstructorCandidates`).
+  * `useCourseAuthoring()`: TanStack Query mutation hooks dengan invalidasi reaktif cache (`['courses']`, `['course', id]`, `['course-modules', id]`).
+* **Components & Routes:**
+  * `/admin/courses` (`CourseManagementPage`): Dashboard authoring dengan filter status, kategori, instruktur, pencarian, dan tombol aksi Edit / Publish / Archive.
+  * `/admin/courses/create` (`CourseCreatePage`): Form pembuatan kursus baru.
+  * `/admin/courses/:courseId/edit` (`CourseEditPage`): Editor komprehensif dengan tabbed interface:
+    - *Course Structure*: `CourseStructureEditor` (accordion modul, CRUD materi teks/video/PDF, toggle mandatory).
+    - *Course Details*: `CourseForm` (edit judul, kategori, durasi, deskripsi, thumbnail preview).
+    - *Lifecycle & Status*: `CourseStatusActions` (transisi status `DRAFT → PUBLISHED → ARCHIVED` dengan modal konfirmasi; restricted notice untuk instructor).
+    - *Instructors*: `CourseInstructorsManager` (tambah dan cabut instruktur; Admin-only).
+  * `CourseAuthoringAccessDenied`: Guard 403 visual bagi peran tidak berwenang (`EMPLOYEE`).
+
 ### Learning Feature Architecture (Task 16)
 Domain pembelajaran dan pendaftaran kursus diimplementasikan secara modular pada `features/learning/`:
 * **API Endpoints:**

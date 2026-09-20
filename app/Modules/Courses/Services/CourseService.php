@@ -20,6 +20,7 @@ class CourseService
 
         return Course::query()
             ->with(['category', 'instructors'])
+            ->withCount(['modules', 'materials'])
             ->tap(function ($query) use ($actor, $filters) {
                 // Role-based visibility scoping
                 if ($actor->hasRole(Role::SUPER_ADMIN, Role::LEARNING_ADMIN)) {
@@ -73,7 +74,7 @@ class CourseService
     {
         $slug = $this->generateUniqueSlug($data['title']);
 
-        return Course::create([
+        $course = Course::create([
             'category_id' => $data['category_id'],
             'title' => $data['title'],
             'slug' => $slug,
@@ -83,6 +84,12 @@ class CourseService
             'status' => Course::STATUS_DRAFT,
             'published_at' => null,
         ]);
+
+        if ($actor->hasRole(Role::INSTRUCTOR)) {
+            $course->instructors()->syncWithoutDetaching([$actor->id]);
+        }
+
+        return $course;
     }
 
     /**

@@ -10,6 +10,9 @@ import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage';
 import DashboardPage from '@/pages/DashboardPage';
 import CourseCatalogPage from '@/features/courses/pages/CourseCatalogPage';
 import CourseDetailPage from '@/features/courses/pages/CourseDetailPage';
+import CourseManagementPage from '@/features/courses/pages/authoring/CourseManagementPage';
+import CourseCreatePage from '@/features/courses/pages/authoring/CourseCreatePage';
+import CourseEditPage from '@/features/courses/pages/authoring/CourseEditPage';
 import MyLearningPage from '@/features/learning/pages/MyLearningPage';
 import LearningPlayerPage from '@/features/learning/pages/LearningPlayerPage';
 import QuizPage from '@/features/assessments/pages/QuizPage';
@@ -38,6 +41,9 @@ export const AppRoutes: React.FC = () => {
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/courses" element={<CourseCatalogPage />} />
                     <Route path="/courses/:id" element={<CourseDetailPage />} />
+                    <Route path="/admin/courses" element={<CourseManagementPage />} />
+                    <Route path="/admin/courses/create" element={<CourseCreatePage />} />
+                    <Route path="/admin/courses/:courseId/edit" element={<CourseEditPage />} />
                     <Route path="/my-learning" element={<MyLearningPage />} />
                     <Route path="/my-learning/:enrollmentId" element={<LearningPlayerPage />} />
                     <Route path="/my-learning/:enrollmentId/quizzes/:quizId" element={<QuizPage />} />

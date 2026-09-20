@@ -15,7 +15,7 @@ ELMS simulates an internal learning and competency development portal for an ent
 - **Zero Frontend Aggregation**: Client application strictly consumes authoritative server-computed statistics; no synthetic metrics or client-side averages computed over paginated datasets.
 - **Strict Role-Based Access Control (RBAC)**: Enforced via Laravel Sanctum, Route Middleware, Form Requests, and Eloquent Policies with layered defense in frontend React routes.
 - **Assessment Integrity**: Quiz answer keys (`is_correct`) are securely stripped by the backend during active attempts and only released upon submission for review.
-- **High Test Coverage**: 172 frontend tests (Vitest + React Testing Library) and 270 backend tests / 1,112 assertions (PHPUnit).
+- **High Test Coverage**: 197 frontend tests (Vitest + React Testing Library across 39 test suites) and 284 backend tests / 1,146 assertions (PHPUnit).
 
 ---
 
@@ -23,6 +23,7 @@ ELMS simulates an internal learning and competency development portal for an ent
 
 - **Authentication & RBAC**: Self-registration for employees (`/register`), password reset lifecycle (`/forgot-password`, `/reset-password` with token verification & anti-enumeration), and token-based authentication via Laravel Sanctum with 4 discrete roles: `SUPER_ADMIN`, `LEARNING_ADMIN`, `INSTRUCTOR`, and `EMPLOYEE`. Quick-fill demo account switcher on login.
 - **Role-Aware Dashboard**: Dynamic executive metrics adapted per role (4 employee cards, 4 instructor performance cards, 6 institutional admin cards).
+- **Course Authoring & Curriculum Management**: Role-scoped course authoring dashboard (`/admin/courses`), draft course creation (`/admin/courses/create`), and tabbed course editor (`/admin/courses/:courseId/edit`) supporting module outline management, text/video/document materials CRUD with mandatory completion toggles, course metadata updates, instructor assignments (Admin-only), and strict lifecycle state transitions (`DRAFT → PUBLISHED → ARCHIVED`).
 - **Course Catalog & Syllabus**: Searchable and category-filtered course catalog with dynamic call-to-action ("Enroll in Course" vs. "Continue Learning") and detailed syllabus preview.
 - **Learning Player**: Distraction-free interactive learning environment supporting text reading, PDF document viewer, and video embedding, with idempotent progress tracking.
 - **Quiz Assessments**: Multi-phase evaluation flow (Instructions & Quota → Timed Attempt → Instant Scored Result & Answer Review).
@@ -105,9 +106,14 @@ ELMS simulates an internal learning and competency development portal for an ent
 8. **Personal Reports**: View personal learning timeline at `/reports/learning`. Unauthorized routes (`/reports/courses`, `/reports/quiz`) are guarded with HTTP 403 / Access Denied.
 
 ### Instructor & Administrator Flow
-1. **Sign In**: Login as Instructor (`instructor@elms.test`) or Super Admin (`superadmin@elms.test`).
+1. **Sign In**: Login as Instructor (`instructor@elms.test`), Learning Admin (`learningadmin@elms.test`), or Super Admin (`superadmin@elms.test`).
 2. **Executive Dashboard**: Review institutional statistics (total employees, course completions, average assessment score).
-3. **Reporting Hub**: Access `/reports` to inspect course performance tables, cross-departmental learner progress, and quiz attempt distributions scoped to the authorized role.
+3. **Course Authoring**: Navigate to `/admin/courses` to manage organizational courses:
+   - **Create Course**: Click "+ Create Course" (`/admin/courses/create`), specify category, title, duration, and description (creates course in `DRAFT` state; instructors are automatically assigned).
+   - **Structure Syllabus**: In `/admin/courses/:id/edit`, organize curriculum modules and attach learning materials (`TEXT`, `VIDEO`, `PDF`) with optional or mandatory completion toggles.
+   - **Course Lifecycle**: Institutional Administrators publish draft courses directly (`DRAFT → PUBLISHED`) to expose them to learners, or retire courses (`PUBLISHED → ARCHIVED`) to prevent new enrollments while preserving historical progress.
+   - **Instructor Assignments**: Institutional Administrators assign or remove instructors via the Instructors tab.
+4. **Reporting Hub**: Access `/reports` to inspect course performance tables, cross-departmental learner progress, and quiz attempt distributions scoped to the authorized role.
 
 ---
 
