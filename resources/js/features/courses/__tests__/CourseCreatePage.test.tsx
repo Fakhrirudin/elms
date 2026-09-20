@@ -38,7 +38,7 @@ describe('CourseCreatePage', () => {
         ]);
 
         mockCourseService.getCourses.mockResolvedValue({
-            data: [
+            courses: [
                 {
                     id: 10,
                     title: 'Existing Course',
@@ -95,6 +95,7 @@ describe('CourseCreatePage', () => {
         const titleInput = await screen.findByLabelText(/course title/i);
         await user.type(titleInput, 'Modern Architecture');
 
+        await screen.findByRole('option', { name: /backend engineering/i });
         const categorySelect = screen.getByLabelText(/category/i);
         await user.selectOptions(categorySelect, '1');
 
