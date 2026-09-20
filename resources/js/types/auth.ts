@@ -7,6 +7,25 @@ export interface LoginPayload {
     password: string;
 }
 
+export interface RegisterPayload {
+    name: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+    department_id: number;
+}
+
+export interface ForgotPasswordPayload {
+    email: string;
+}
+
+export interface ResetPasswordPayload {
+    token: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+}
+
 export interface AuthResponse {
     user: User;
     token: string;

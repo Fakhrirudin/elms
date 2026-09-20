@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import authService from '@/features/auth/services/authService';
 import { AUTH_TOKEN_KEY } from '@/services/api';
-import { AuthResponse, LoginPayload } from '@/types/auth';
+import { AuthResponse, LoginPayload, RegisterPayload } from '@/types/auth';
 import { User } from '@/types/user';
 
 export interface AuthContextType {
@@ -10,6 +10,7 @@ export interface AuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (payload: LoginPayload) => Promise<AuthResponse>;
+    register?: (payload: RegisterPayload) => Promise<AuthResponse>;
     logout: () => Promise<void>;
 }
 
@@ -100,12 +101,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return response;
     }, []);
 
+    const register = useCallback(async (payload: RegisterPayload): Promise<AuthResponse> => {
+        const response = await authService.register(payload);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+        }
+        setToken(response.token);
+        setUser(response.user);
+        return response;
+    }, []);
+
     const value: AuthContextType = {
         user,
         token,
         isAuthenticated: !!user && !!token,
         isLoading,
         login,
+        register,
         logout,
     };
 

@@ -61,6 +61,10 @@ Authentication endpoint:
 
 ```text
 POST /api/v1/auth/login
+POST /api/v1/auth/register
+POST /api/v1/auth/forgot-password
+POST /api/v1/auth/reset-password
+GET  /api/v1/auth/departments
 POST /api/v1/auth/logout
 GET  /api/v1/auth/me
 ```
@@ -224,7 +228,157 @@ Jika credentials tidak valid.
 
 ---
 
-## 7.2 Logout
+## 7.2 Register
+
+```http
+POST /api/v1/auth/register
+```
+
+Endpoint pendaftaran mandiri karyawan (*self-registration*). Publicly accessible. Server secara otoritatif menetapkan `role = EMPLOYEE` dan menolak/mengabaikan eskalasi hak akses (seperti `role`, `role_id`, atau `is_admin`).
+
+### Request
+
+```json
+{
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "password": "Password123!",
+    "password_confirmation": "Password123!",
+    "department_id": 1
+}
+```
+
+### Validation Rules
+
+* `name`: required, string, max: 150
+* `email`: required, valid email, unique:users, max: 255
+* `password`: required, string, confirmed, Password::defaults() (min 8 chars in local/testing)
+* `password_confirmation`: required, string
+* `department_id`: required, integer, exists:departments,id
+
+### Success Response (201 Created)
+
+```json
+{
+    "success": true,
+    "message": "Registration successful",
+    "data": {
+        "user": {
+            "id": 12,
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "role": "EMPLOYEE",
+            "department": {
+                "id": 1,
+                "name": "Pusat Teknologi Informasi dan Komunikasi"
+            }
+        },
+        "token": "..."
+    }
+}
+```
+
+---
+
+## 7.3 Forgot Password
+
+```http
+POST /api/v1/auth/forgot-password
+```
+
+Mengirim link reset password ke email terdaftar menggunakan Laravel native password broker. Mengimplementasikan *anti-enumeration security*: response generic yang sama dikembalikan untuk email terdaftar maupun yang tidak terdaftar.
+
+### Request
+
+```json
+{
+    "email": "employee@example.com"
+}
+```
+
+### Success Response (200 OK)
+
+```json
+{
+    "success": true,
+    "message": "If the account exists, a password reset link has been sent.",
+    "data": null
+}
+```
+
+---
+
+## 7.4 Reset Password
+
+```http
+POST /api/v1/auth/reset-password
+```
+
+Mereset password akun pengguna menggunakan token valid dari email. Menggunakan Laravel password broker dan merevokasi seluruh token Sanctum aktif setelah reset berhasil.
+
+### Request
+
+```json
+{
+    "token": "d748f...",
+    "email": "employee@example.com",
+    "password": "NewSecret123!",
+    "password_confirmation": "NewSecret123!"
+}
+```
+
+### Success Response (200 OK)
+
+```json
+{
+    "success": true,
+    "message": "Password has been reset successfully.",
+    "data": null
+}
+```
+
+### Error Response (400 Bad Request)
+
+```json
+{
+    "success": false,
+    "message": "This password reset token is invalid.",
+    "errors": null
+}
+```
+
+---
+
+## 7.5 Public Departments for Registration
+
+```http
+GET /api/v1/auth/departments
+```
+
+Menyediakan daftar departemen aktif (`id`, `name`) untuk form dropdown registrasi mandiri publik tanpa memerlukan sesi otentikasi Sanctum.
+
+### Success Response (200 OK)
+
+```json
+{
+    "success": true,
+    "message": "Departments retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "Biro Kepegawaian"
+        },
+        {
+            "id": 2,
+            "name": "Pusat Teknologi Informasi dan Komunikasi"
+        }
+    ]
+}
+```
+
+---
+
+## 7.6 Logout
 
 ```http
 POST /api/v1/auth/logout
@@ -248,7 +402,7 @@ Response:
 
 ---
 
-## 7.3 Current User
+## 7.7 Current User
 
 ```http
 GET /api/v1/auth/me

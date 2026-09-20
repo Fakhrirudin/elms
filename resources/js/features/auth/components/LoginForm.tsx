@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -117,6 +117,12 @@ export const LoginForm: React.FC = () => {
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="password">Password</Label>
+                        <Link
+                            to="/forgot-password"
+                            className="text-xs text-primary hover:underline"
+                        >
+                            Forgot password?
+                        </Link>
                     </div>
                     <Input
                         id="password"
@@ -166,6 +172,15 @@ export const LoginForm: React.FC = () => {
                         </button>
                     ))}
                 </div>
+            </div>
+
+            <div className="pt-2 text-center">
+                <p className="text-xs text-muted-foreground">
+                    Don&apos;t have an account?{' '}
+                    <Link to="/register" className="text-primary font-medium hover:underline">
+                        Register as Employee
+                    </Link>
+                </p>
             </div>
         </div>
     );

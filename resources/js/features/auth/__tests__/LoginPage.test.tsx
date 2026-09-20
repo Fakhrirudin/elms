@@ -113,4 +113,16 @@ describe('LoginPage', () => {
             'These credentials do not match our records.'
         );
     });
+
+    it('renders navigation links to forgot password and register pages', () => {
+        renderLoginPage();
+
+        const forgotPasswordLink = screen.getByRole('link', { name: /forgot password\?/i });
+        expect(forgotPasswordLink).toBeInTheDocument();
+        expect(forgotPasswordLink).toHaveAttribute('href', '/forgot-password');
+
+        const registerLink = screen.getByRole('link', { name: /register as employee/i });
+        expect(registerLink).toBeInTheDocument();
+        expect(registerLink).toHaveAttribute('href', '/register');
+    });
 });

@@ -199,6 +199,10 @@ Tidak semua module wajib memiliki semua folder.
 Bertanggung jawab terhadap:
 
 * Login
+* Self-registration (strict server-side EMPLOYEE role assignment)
+* Password reset link generation (anti-enumeration)
+* Password reset confirmation (Laravel password broker & Sanctum token revocation)
+* Public registration departments listing
 * Logout
 * Current authenticated user
 * Password authentication
@@ -724,6 +728,27 @@ Domain pelaporan dan analitik performa pembelajaran diimplementasikan secara mod
   * `/reports/learning`: Halaman Laporan Progres Pembelajaran (dapat diakses seluruh role dengan cakupan data sesuai otorisasi backend).
   * `/reports/quiz`: Halaman Laporan Performa Kuis (akses employee dicegat dan menampilkan `ReportAccessDenied`).
   * `AppLayout.tsx`: Tautan navigasi utama `"Reports"` dimunculkan untuk seluruh pengguna terotentikasi.
+
+### Authentication Feature Enhancement (Task 20)
+Peningkatan alur otentikasi mandiri (Self-Registration, Forgot Password, Reset Password) diimplementasikan secara terintegrasi pada backend `app/Modules/Authentication/` dan frontend `features/auth/`:
+* **API Endpoints:**
+  * `POST /api/v1/auth/register`: Pendaftaran mandiri karyawan. Server secara ketat dan otoritatif menetapkan `role = EMPLOYEE`, mengabaikan/menolak field eskalasi hak akses (`role`, `role_id`, `is_admin`), dan langsung menerbitkan bearer token Sanctum.
+  * `POST /api/v1/auth/forgot-password`: Permintaan tautan reset password menggunakan Laravel Password Broker. Mengimplementasikan *anti-enumeration security* (pesan sukses generic yang sama dikembalikan untuk email terdaftar maupun tidak terdaftar).
+  * `POST /api/v1/auth/reset-password`: Reset password menggunakan token resmi Laravel Password Broker. Memvalidasi token dan kecocokan email/password, menghapus token dari `password_reset_tokens`, dan merevokasi seluruh token Sanctum aktif milik pengguna.
+  * `GET /api/v1/auth/departments`: Endpoint publik daftar departemen aktif (`id`, `name`) untuk mengisi pilihan dropdown registrasi pengguna tanpa memerlukan sesi login.
+* **Services & Client Layer:**
+  * `authService.ts`: Metode client Axios untuk `register`, `forgotPassword`, `resetPassword`, dan `getDepartments`.
+  * `AuthContext.tsx`: Menyediakan metode `register()` yang secara otomatis menyimpan token ke `localStorage` (`AUTH_TOKEN_KEY`) dan menyinkronkan state pengguna ke React Context.
+* **Components & UX:**
+  * `RegisterForm.tsx` & `RegisterPage.tsx`: Halaman registrasi `/register` dengan validasi client-side (nama, email format, departemen terpilih, konfirmasi password), penanganan error validasi backend (422), dan navigasi ke `/dashboard`.
+  * `ForgotPasswordForm.tsx` & `ForgotPasswordPage.tsx`: Halaman `/forgot-password` dengan validasi email, tampilan pesan sukses generic yang informatif, dan tautan kembali ke login.
+  * `ResetPasswordForm.tsx` & `ResetPasswordPage.tsx`: Halaman `/reset-password` yang mengekstrak `token` dan `email` dari URL query string (`?token=...&email=...`), memvalidasi password baru, menangani error token kedaluwarsa/tidak valid, dan menampilkan konfirmasi sukses beserta tautan login.
+  * `LoginForm.tsx`: Penambahan tautan *"Forgot password?"* di baris input password dan tautan *"Register as Employee"* di bagian bawah kartu login.
+* **Routing & Route Guards:**
+  * Rute publik baru `/register`, `/forgot-password`, dan `/reset-password` dibungkus di dalam `PublicRoute` di `AppRoutes.tsx` agar pengguna yang sudah login secara otomatis dialihkan ke `/dashboard` dan tidak terjebak di halaman otentikasi.
+* **Email & Local Development Workflow:**
+  * Notifikasi reset password menggunakan `Illuminate\Auth\Notifications\ResetPassword` bawaan Laravel dengan custom URL callback terkonfigurasi di `AppServiceProvider::boot()`.
+  * Kompatibel dengan local SMTP catchers seperti Mailpit (`127.0.0.1:1025`) melalui konfigurasi standard `.env.example`.
 
 ---
 

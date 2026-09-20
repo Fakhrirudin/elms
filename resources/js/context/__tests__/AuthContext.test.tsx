@@ -8,6 +8,7 @@ import { AUTH_TOKEN_KEY } from '@/services/api';
 vi.mock('@/features/auth/services/authService', () => ({
     default: {
         login: vi.fn(),
+        register: vi.fn(),
         logout: vi.fn(),
         getMe: vi.fn(),
     },
@@ -135,5 +136,37 @@ describe('AuthContext', () => {
         expect(result.current.user).toBeNull();
         expect(result.current.token).toBeNull();
         expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBeNull();
+    });
+
+    it('handles register successfully and sets user and token', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <AuthProvider>{children}</AuthProvider>
+        );
+
+        (authService.register as any).mockResolvedValueOnce({
+            user: mockUser,
+            token: 'new-registered-token',
+        });
+
+        const { result } = renderHook(() => useAuth(), { wrapper });
+
+        await waitFor(() => {
+            expect(result.current.isLoading).toBe(false);
+        });
+
+        await act(async () => {
+            await result.current.register!({
+                name: 'Test User',
+                email: 'test@example.com',
+                password: 'password',
+                password_confirmation: 'password',
+                department_id: 1,
+            });
+        });
+
+        expect(result.current.isAuthenticated).toBe(true);
+        expect(result.current.user).toEqual(mockUser);
+        expect(result.current.token).toBe('new-registered-token');
+        expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe('new-registered-token');
     });
 });

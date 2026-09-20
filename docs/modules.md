@@ -47,6 +47,10 @@ Mengelola proses authentication user terhadap aplikasi.
 ## Responsibilities
 
 * Login
+* Self-registration (employee role only)
+* Password reset link request (anti-enumeration)
+* Password reset submission (token validation & Sanctum revocation)
+* Public registration departments listing
 * Logout
 * Current authenticated user
 * Password authentication
@@ -61,6 +65,7 @@ app/Modules/Authentication/
 
 ├── Controllers/
 ├── Requests/
+├── Resources/
 ├── Services/
 └── Routes/
 ```
@@ -69,6 +74,10 @@ app/Modules/Authentication/
 
 ```text
 POST /api/v1/auth/login
+POST /api/v1/auth/register
+POST /api/v1/auth/forgot-password
+POST /api/v1/auth/reset-password
+GET  /api/v1/auth/departments
 POST /api/v1/auth/logout
 GET  /api/v1/auth/me
 ```
@@ -76,6 +85,11 @@ GET  /api/v1/auth/me
 ## Rules
 
 * User harus memiliki email dan password yang valid.
+* Public registration wajib dan selalu menetapkan role `EMPLOYEE` dari server-side.
+* Public registration menolak atau mengabaikan field eskalasi role (`role`, `role_id`, `is_admin`).
+* Endpoint forgot-password menerapkan anti-enumeration: pesan sukses generic yang sama dikembalikan untuk email ada maupun tidak ada.
+* Reset password menggunakan Laravel password broker token yang tersimpan di `password_reset_tokens`.
+* Reset password yang berhasil langsung merevokasi seluruh token Sanctum aktif dan menghapus token reset agar tidak dapat digunakan kembali.
 * User inactive tidak dapat login.
 * Password tidak pernah dikembalikan melalui API.
 * Authentication dilakukan di backend.

@@ -8,6 +8,7 @@ use App\Modules\Notifications\Policies\NotificationPolicy;
 use App\Modules\Reports\Policies\ReportPolicy;
 use App\Modules\Users\Policies\DepartmentPolicy;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +31,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
+            $frontendUrl = rtrim(config('app.frontend_url', config('app.url', 'http://localhost:8000')), '/');
+            $email = method_exists($notifiable, 'getEmailForPasswordReset')
+                ? $notifiable->getEmailForPasswordReset()
+                : ($notifiable->email ?? '');
+
+            return "{$frontendUrl}/reset-password?token={$token}&email=".urlencode($email);
+        });
 
         Gate::define('viewDashboard', [ReportPolicy::class, 'viewDashboard']);
         Gate::define('viewCourseReport', [ReportPolicy::class, 'viewCourseReport']);

@@ -15,13 +15,13 @@ ELMS simulates an internal learning and competency development portal for an ent
 - **Zero Frontend Aggregation**: Client application strictly consumes authoritative server-computed statistics; no synthetic metrics or client-side averages computed over paginated datasets.
 - **Strict Role-Based Access Control (RBAC)**: Enforced via Laravel Sanctum, Route Middleware, Form Requests, and Eloquent Policies with layered defense in frontend React routes.
 - **Assessment Integrity**: Quiz answer keys (`is_correct`) are securely stripped by the backend during active attempts and only released upon submission for review.
-- **High Test Coverage**: 152 frontend tests (Vitest + React Testing Library) and 245 backend tests / 1,023 assertions (PHPUnit).
+- **High Test Coverage**: 172 frontend tests (Vitest + React Testing Library) and 270 backend tests / 1,112 assertions (PHPUnit).
 
 ---
 
 ## 2. Key Features
 
-- **Authentication & RBAC**: Token-based authentication via Laravel Sanctum with 4 discrete roles: `SUPER_ADMIN`, `LEARNING_ADMIN`, `INSTRUCTOR`, and `EMPLOYEE`. Quick-fill demo account switcher on login.
+- **Authentication & RBAC**: Self-registration for employees (`/register`), password reset lifecycle (`/forgot-password`, `/reset-password` with token verification & anti-enumeration), and token-based authentication via Laravel Sanctum with 4 discrete roles: `SUPER_ADMIN`, `LEARNING_ADMIN`, `INSTRUCTOR`, and `EMPLOYEE`. Quick-fill demo account switcher on login.
 - **Role-Aware Dashboard**: Dynamic executive metrics adapted per role (4 employee cards, 4 instructor performance cards, 6 institutional admin cards).
 - **Course Catalog & Syllabus**: Searchable and category-filtered course catalog with dynamic call-to-action ("Enroll in Course" vs. "Continue Learning") and detailed syllabus preview.
 - **Learning Player**: Distraction-free interactive learning environment supporting text reading, PDF document viewer, and video embedding, with idempotent progress tracking.
@@ -73,7 +73,7 @@ ELMS simulates an internal learning and competency development portal for an ent
 │                   Laravel Modular Monolith Backend                     │
 │                                                                        │
 │   app/Modules/                                                         │
-│   ├── Authentication  (Login, Logout, Token lifecycle)                 │
+│   ├── Authentication  (Login, Register, Password Reset, Token lifecycle)│
 │   ├── Users           (Users, Roles, Departments)                      │
 │   ├── Courses         (Courses, Categories, Modules, Materials)       │
 │   ├── Learning        (Enrollments, Material Progress, Completion)     │
