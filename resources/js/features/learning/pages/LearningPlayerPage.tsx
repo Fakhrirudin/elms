@@ -23,6 +23,7 @@ import {
     Layers,
     Users,
     Award,
+    ClipboardList,
 } from 'lucide-react';
 
 export const LearningPlayerPage: React.FC = () => {
@@ -417,6 +418,7 @@ export const LearningPlayerPage: React.FC = () => {
                     <div className="space-y-4">
                         {modules.map((module, index) => {
                             const moduleMaterials = module.materials || [];
+                            const moduleAssignments = module.assignments || [];
                             return (
                                 <Card key={module.id} className="border-border bg-card overflow-hidden">
                                     <CardHeader className="p-4 sm:p-5 pb-3 bg-muted/20 border-b border-border/50">
@@ -434,32 +436,90 @@ export const LearningPlayerPage: React.FC = () => {
                                                     </CardDescription>
                                                 )}
                                             </div>
-                                            <Badge variant="outline" className="text-[10px]">
-                                                {moduleMaterials.length} {moduleMaterials.length === 1 ? 'material' : 'materials'}
-                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className="text-[10px]">
+                                                    {moduleMaterials.length} {moduleMaterials.length === 1 ? 'material' : 'materials'}
+                                                </Badge>
+                                                {moduleAssignments.length > 0 && (
+                                                    <Badge variant="secondary" className="text-[10px]">
+                                                        {moduleAssignments.length} {moduleAssignments.length === 1 ? 'assignment' : 'assignments'}
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </div>
                                     </CardHeader>
 
-                                    <CardContent className="p-4 sm:p-5 space-y-2.5">
-                                        {moduleMaterials.length === 0 ? (
+                                    <CardContent className="p-4 sm:p-5 space-y-3">
+                                        {moduleMaterials.length === 0 && moduleAssignments.length === 0 ? (
                                             <p className="text-xs text-muted-foreground py-2 italic">
-                                                No materials published in this module.
+                                                No materials or assignments published in this module.
                                             </p>
                                         ) : (
-                                            moduleMaterials.map((material) => (
-                                                <MaterialListItem
-                                                    key={material.id}
-                                                    material={material}
-                                                    isCompleted={isMaterialCompleted(material)}
-                                                    isSelected={selectedMaterial?.id === material.id}
-                                                    isCompleting={
-                                                        completeMaterialMutation.isPending &&
-                                                        completeMaterialMutation.variables?.materialId === material.id
-                                                    }
-                                                    onSelect={(mat) => setSelectedMaterial(mat)}
-                                                    onMarkComplete={handleMarkComplete}
-                                                />
-                                            ))
+                                            <>
+                                                {moduleMaterials.length > 0 && (
+                                                    <div className="space-y-2">
+                                                        {moduleMaterials.map((material) => (
+                                                            <MaterialListItem
+                                                                key={material.id}
+                                                                material={material}
+                                                                isCompleted={isMaterialCompleted(material)}
+                                                                isSelected={selectedMaterial?.id === material.id}
+                                                                isCompleting={
+                                                                    completeMaterialMutation.isPending &&
+                                                                    completeMaterialMutation.variables?.materialId === material.id
+                                                                }
+                                                                onSelect={(mat) => setSelectedMaterial(mat)}
+                                                                onMarkComplete={handleMarkComplete}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {moduleAssignments.length > 0 && (
+                                                    <div className="pt-3 border-t border-border/50 space-y-2">
+                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                                                            <ClipboardList className="h-3.5 w-3.5 text-primary" />
+                                                            <span>Assignments</span>
+                                                        </h4>
+                                                        <div className="space-y-2">
+                                                            {moduleAssignments.map((assignment) => (
+                                                                <div
+                                                                    key={assignment.id}
+                                                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border/70 bg-card hover:bg-muted/30 transition-colors gap-3"
+                                                                    data-testid={`assignment-item-${assignment.id}`}
+                                                                >
+                                                                    <div className="space-y-1">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs sm:text-sm font-semibold text-foreground">
+                                                                                {assignment.title}
+                                                                            </span>
+                                                                            <Badge variant="outline" className="text-[10px]">
+                                                                                Max: {assignment.max_score} pts
+                                                                            </Badge>
+                                                                            {assignment.is_required && (
+                                                                                <Badge variant="secondary" className="text-[10px]">
+                                                                                    Required
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        {assignment.due_at && (
+                                                                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                                                <Clock className="h-3 w-3" />
+                                                                                <span>Due: {new Date(assignment.due_at).toLocaleDateString()}</span>
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    <Button asChild size="sm" variant="outline" className="text-xs shrink-0">
+                                                                        <Link to={`/my-learning/${enrollmentId}/assignments/${assignment.id}`}>
+                                                                            View Assignment
+                                                                        </Link>
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </CardContent>
                                 </Card>

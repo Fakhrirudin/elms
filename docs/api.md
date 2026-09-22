@@ -2361,7 +2361,22 @@ API contract dan implementation harus tetap sinkron.
 ├── courses
 │   ├── instructors
 │   └── modules
-│       └── materials
+│       ├── materials
+│       └── assignments
+│
+├── assignments
+│   ├── {assignment}
+│   │   ├── publish
+│   │   ├── close
+│   │   ├── submissions
+│   │   ├── my-submissions
+│   │   └── submissions (POST)
+│
+├── assignment-submissions
+│   └── {submission}
+│       ├── review
+│       ├── start-review
+│       └── download
 │
 ├── my-courses
 ├── enrollments
@@ -2387,4 +2402,71 @@ API contract dan implementation harus tetap sinkron.
         └── read
 ```
 
-Dokumen ini merupakan API contract awal untuk ELMS MVP dan dapat berkembang mengikuti implementation, selama perubahan tetap konsisten dengan requirements, architecture, database, dan module boundaries.
+---
+
+# 40. Assignment & Submission Endpoints
+
+## 40.1 Module Assignments List & Create
+
+```text
+GET  /api/v1/modules/{module}/assignments
+POST /api/v1/modules/{module}/assignments
+```
+
+* **GET**: Mendapatkan daftar assignment dalam module. Peserta hanya melihat assignment berstatus `PUBLISHED`.
+* **POST**: Instruktur yang ditugaskan atau Admin membuat assignment baru (default `DRAFT`).
+
+Request Payload (POST):
+```json
+{
+    "title": "Practical Project: REST API Implementation",
+    "instructions": "Implementasi endpoint RESTful lengkap dengan validasi dan otorisasi.",
+    "due_at": "2026-12-31T23:59:00Z",
+    "max_score": 100,
+    "max_attempts": 2,
+    "is_required": true
+}
+```
+
+## 40.2 Assignment Detail, Update, Publish & Close
+
+```text
+GET    /api/v1/assignments/{assignment}
+PUT    /api/v1/assignments/{assignment}
+DELETE /api/v1/assignments/{assignment}
+POST   /api/v1/assignments/{assignment}/publish
+POST   /api/v1/assignments/{assignment}/close
+```
+
+* **GET**: Detail assignment. Siswa wajib ter-enroll aktif pada kursus yang terpublikasi.
+* **PUT/DELETE**: Update atau delete (khusus DRAFT, instruktur yang berhak / admin).
+* **POST publish**: Transisi status `DRAFT` → `PUBLISHED`.
+* **POST close**: Transisi status `PUBLISHED` → `CLOSED`.
+
+## 40.3 Submissions (Student)
+
+```text
+GET  /api/v1/assignments/{assignment}/my-submissions
+POST /api/v1/assignments/{assignment}/submissions
+```
+
+* **GET**: Daftar attempt pengumpulan tugas milik siswa yang sedang login.
+* **POST**: Mengunggah tugas baru (`multipart/form-data`, file max 10MB, PDF/doc/docx/xls/xlsx/ppt/pptx/txt/zip/images). Concurrency-safe dengan DB row-level locking.
+
+## 40.4 Review & Grading (Instructor / Admin)
+
+```text
+GET  /api/v1/assignments/{assignment}/submissions
+POST /api/v1/assignment-submissions/{submission}/start-review
+POST /api/v1/assignment-submissions/{submission}/review
+GET  /api/v1/assignment-submissions/{submission}/download
+```
+
+* **GET submissions**: Daftar seluruh submission siswa pada assignment (filter: `status`, `search`).
+* **POST start-review**: Menandai submission sedang ditinjau (`UNDER_REVIEW`).
+* **POST review**: Menyimpan hasil evaluasi: `PASSED` atau `NEEDS_REVISION` beserta score dan feedback.
+* **GET download**: Download file submission secara aman melalui controller stream.
+
+---
+
+Dokumen ini merupakan API contract untuk ELMS dan diperbarui secara konsisten dengan requirements, architecture, database, dan module boundaries.

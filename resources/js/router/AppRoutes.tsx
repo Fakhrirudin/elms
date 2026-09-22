@@ -16,6 +16,7 @@ import CourseEditPage from '@/features/courses/pages/authoring/CourseEditPage';
 import MyLearningPage from '@/features/learning/pages/MyLearningPage';
 import LearningPlayerPage from '@/features/learning/pages/LearningPlayerPage';
 import QuizPage from '@/features/assessments/pages/QuizPage';
+import AssignmentPlayerPage from '@/features/assessments/pages/AssignmentPlayerPage';
 import MyCertificatesPage from '@/features/certificates/pages/MyCertificatesPage';
 import CertificateDetailPage from '@/features/certificates/pages/CertificateDetailPage';
 import ReportsIndexPage from '@/features/reports/pages/ReportsIndexPage';
@@ -47,6 +48,7 @@ export const AppRoutes: React.FC = () => {
                     <Route path="/my-learning" element={<MyLearningPage />} />
                     <Route path="/my-learning/:enrollmentId" element={<LearningPlayerPage />} />
                     <Route path="/my-learning/:enrollmentId/quizzes/:quizId" element={<QuizPage />} />
+                    <Route path="/my-learning/:enrollmentId/assignments/:assignmentId" element={<AssignmentPlayerPage />} />
                     <Route path="/certificates" element={<MyCertificatesPage />} />
                     <Route path="/certificates/:certificateId" element={<CertificateDetailPage />} />
                     <Route path="/reports" element={<ReportsIndexPage />} />

@@ -2,8 +2,10 @@
 
 namespace App\Modules\Courses\Services;
 
+use App\Models\Assignment;
 use App\Models\Course;
 use App\Models\Module;
+use App\Models\Role;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,8 +18,19 @@ class ModuleService
      */
     public function listForCourse(Course $course): Collection
     {
+        $user = auth()->user();
+        $isLearner = $user && $user->hasRole(Role::EMPLOYEE);
+
         return $course->modules()
-            ->with('materials')
+            ->with([
+                'materials',
+                'assignments' => function ($query) use ($isLearner) {
+                    if ($isLearner) {
+                        $query->where('status', Assignment::STATUS_PUBLISHED);
+                    }
+                    $query->withCount('submissions')->orderBy('id');
+                },
+            ])
             ->orderBy('sort_order')
             ->get();
     }
@@ -34,7 +47,7 @@ class ModuleService
 
         $module = $course->modules()->create($data);
 
-        return $module->load('materials');
+        return $module->load(['materials', 'assignments']);
     }
 
     /**

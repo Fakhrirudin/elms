@@ -1328,6 +1328,24 @@ Microservices bukan target MVP.
 
 ---
 
+## 29.1 Assignment File Handling & Concurrency Architecture
+
+### File Storage Security
+
+* File submission siswa disimpan pada disk lokal privat: `storage/app/private/assignments/{assignment_id}/`.
+* File tidak diekspos melalui public URL / symlink web server.
+* Akses file dilakukan secara terkontrol via endpoint `GET /api/v1/assignment-submissions/{submission}/download` dengan policy backend yang memastikan hanya instruktur pengajar, admin, atau siswa pemilik tugas yang dapat mengunduh file.
+* Arsitektur filesystem ini decoupled dan kompatibel untuk migrasi ke cloud storage (AWS S3 / MinIO) tanpa perubahan domain logic.
+
+### Concurrency & Transaction Boundary
+
+* Operasi penyerahan tugas (submission) dibungkus dalam ACID database transaction.
+* Menggunakan pessimistic row-level locking (`lockForUpdate()`) pada assignment record dan query submission terbaru untuk mencegah race conditions pada multi-attempt submission.
+* Constraint unik tingkat basis data `UNIQUE(assignment_id, user_id, attempt_number)` berfungsi sebagai safety net terakhir.
+* In-app notification dikirimkan saat event pengiriman tugas dan penyelesaian penilaian instruktur.
+
+---
+
 ## 30. Source of Truth
 
 Dokumen berikut memiliki tanggung jawab masing-masing:

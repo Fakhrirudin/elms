@@ -3,6 +3,7 @@
 namespace App\Modules\Courses\Resources;
 
 use App\Models\Module;
+use App\Modules\Assessments\Resources\AssignmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +24,7 @@ class ModuleResource extends JsonResource
             'description' => $this->description,
             'sort_order' => $this->sort_order,
             'materials' => MaterialResource::collection($this->whenLoaded('materials')),
+            'assignments' => AssignmentResource::collection($this->whenLoaded('assignments')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

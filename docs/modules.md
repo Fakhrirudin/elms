@@ -485,6 +485,72 @@ PASSED
 
 ---
 
+## 7.2 Assignment & Submission Sub-module
+
+### Purpose
+
+Menyediakan penilaian berbasis praktik/proyek (assignments) di mana peserta mengunggah file hasil pengerjaan, dan instruktur memberikan penilaian (grading), skor, dan umpan balik (feedback).
+
+### Entities
+
+```text
+Assignment
+AssignmentSubmission
+```
+
+### Assignment Lifecycle
+
+```text
+DRAFT → PUBLISHED → CLOSED
+```
+
+### Submission Flow
+
+```text
+Instructor creates Assignment (DRAFT)
+       ↓
+Instructor publishes Assignment (PUBLISHED)
+       ↓
+Enrolled Student views Assignment
+       ↓
+Student uploads Submission (SUBMITTED)
+       ↓ (In-app Notification to Instructor)
+Instructor reviews Submission (UNDER_REVIEW)
+       ↓
+Instructor grades:
+       ├── NEEDS_REVISION (Student can resubmit if attempts remain)
+       └── PASSED (Final passing result, form locks)
+       ↓ (In-app Notification to Student)
+```
+
+### API Endpoints
+
+```text
+GET    /api/v1/modules/{module}/assignments
+POST   /api/v1/modules/{module}/assignments
+GET    /api/v1/assignments/{assignment}
+PUT    /api/v1/assignments/{assignment}
+DELETE /api/v1/assignments/{assignment}
+POST   /api/v1/assignments/{assignment}/publish
+POST   /api/v1/assignments/{assignment}/close
+GET    /api/v1/assignments/{assignment}/submissions
+GET    /api/v1/assignments/{assignment}/my-submissions
+POST   /api/v1/assignments/{assignment}/submissions
+POST   /api/v1/assignment-submissions/{submission}/start-review
+POST   /api/v1/assignment-submissions/{submission}/review
+GET    /api/v1/assignment-submissions/{submission}/download
+```
+
+### Business Rules
+
+* Concurrency Safety: Penyerahan attempt dikunci secara atomik dengan DB transaction dan `lockForUpdate()`.
+* Attempt limit diatur oleh `max_attempts` (1-10).
+* Submission ditolak bila melewati deadline `due_at` atau sudah `PASSED`.
+* Download file dilindungi otorisasi instruktur/admin dan pemilik submission.
+* File tersimpan aman di disk private `storage/app/private/assignments/{assignment_id}`.
+
+---
+
 # 8. Certificates Module
 
 ## Purpose

@@ -898,6 +898,120 @@ CERTIFICATE_ISSUED
 
 ---
 
+# 5.18 `assignments`
+
+Menyimpan tugas/praktik (assignment) yang terikat pada sebuah module kursus.
+
+### Columns
+
+| Column         | Type         | Null | Default        | Description                               |
+| -------------- | ------------ | ---: | -------------- | ----------------------------------------- |
+| `id`           | BIGINT       |   No | Auto Increment | Primary key                               |
+| `module_id`    | BIGINT       |   No | -              | Parent module                             |
+| `created_by`   | BIGINT       |   No | -              | Instructor / Admin pembuat                |
+| `title`        | VARCHAR(255) |   No | -              | Judul tugas                               |
+| `instructions` | TEXT         |   No | -              | Petunjuk & spesifikasi tugas              |
+| `due_at`       | TIMESTAMP    |  Yes | NULL           | Batas waktu pengumpulan (nullable)        |
+| `max_score`    | INTEGER      |   No | 100            | Nilai maksimum (1 - 1000)                 |
+| `max_attempts` | INTEGER      |   No | 1              | Batas percobaan submission (1 - 10)       |
+| `is_required`  | BOOLEAN      |   No | false          | Apakah wajib untuk kelulusan module       |
+| `status`       | VARCHAR(20)  |   No | `DRAFT`        | Status (`DRAFT`, `PUBLISHED`, `CLOSED`)   |
+| `created_at`   | TIMESTAMP    |  Yes | NULL           | Creation timestamp                        |
+| `updated_at`   | TIMESTAMP    |  Yes | NULL           | Update timestamp                          |
+
+### Constraints
+
+```text
+PRIMARY KEY (id)
+
+FOREIGN KEY (module_id)
+REFERENCES modules(id)
+ON DELETE CASCADE
+
+FOREIGN KEY (created_by)
+REFERENCES users(id)
+ON DELETE RESTRICT
+```
+
+### Indexes
+
+```text
+INDEX (module_id)
+INDEX (created_by)
+INDEX (status)
+```
+
+### Business rules
+
+* Assignment hanya dapat dibuat oleh Instructor yang ditugaskan ke course atau Admin.
+* Course harus berstatus `PUBLISHED` agar assignment berstatus `PUBLISHED` dapat diakses oleh Employee.
+* Transisi status: `DRAFT` -> `PUBLISHED` -> `CLOSED`.
+* Tidak ada revert to draft setelah assignment dipublikasikan.
+
+---
+
+# 5.19 `assignment_submissions`
+
+Menyimpan riwayat pengumpulan tugas (submission/attempt) oleh siswa beserta evaluasi instruktur.
+
+### Columns
+
+| Column             | Type         | Null | Default           | Description                                                        |
+| ------------------ | ------------ | ---: | ----------------- | ------------------------------------------------------------------ |
+| `id`               | BIGINT       |   No | Auto Increment    | Primary key                                                        |
+| `assignment_id`    | BIGINT       |   No | -                 | Assignment target                                                  |
+| `user_id`          | BIGINT       |   No | -                 | Siswa pengumpul (Employee)                                         |
+| `attempt_number`   | INTEGER      |   No | 1                 | Nomor percobaan submission                                         |
+| `file_path`        | VARCHAR(255) |   No | -                 | Storage path file di disk private                                  |
+| `file_name`        | VARCHAR(255) |   No | -                 | Nama file asli saat diupload                                       |
+| `file_size`        | BIGINT       |   No | -                 | Ukuran file dalam bytes                                            |
+| `mime_type`        | VARCHAR(100) |   No | -                 | MIME type file                                                     |
+| `student_comment`  | TEXT         |  Yes | NULL              | Catatan / pesan dari siswa                                         |
+| `status`           | VARCHAR(20)  |   No | `SUBMITTED`       | Status (`SUBMITTED`, `UNDER_REVIEW`, `PASSED`, `NEEDS_REVISION`)   |
+| `score`            | NUMERIC(5,2) |  Yes | NULL              | Nilai evaluasi instruktur                                          |
+| `feedback`         | TEXT         |  Yes | NULL              | Umpan balik evaluasi instruktur                                    |
+| `reviewed_by`      | BIGINT       |  Yes | NULL              | Instruktur / Admin penilai                                         |
+| `reviewed_at`      | TIMESTAMP    |  Yes | NULL              | Waktu penyelesaian evaluasi                                        |
+| `submitted_at`     | TIMESTAMP    |   No | Current timestamp | Waktu pengiriman submission                                        |
+| `created_at`       | TIMESTAMP    |  Yes | NULL              | Creation timestamp                                                 |
+| `updated_at`       | TIMESTAMP    |  Yes | NULL              | Update timestamp                                                   |
+
+### Constraints
+
+```text
+PRIMARY KEY (id)
+
+FOREIGN KEY (assignment_id)
+REFERENCES assignments(id)
+ON DELETE CASCADE
+
+FOREIGN KEY (user_id)
+REFERENCES users(id)
+ON DELETE CASCADE
+
+FOREIGN KEY (reviewed_by)
+REFERENCES users(id)
+ON DELETE SET NULL
+
+UNIQUE (assignment_id, user_id, attempt_number)
+```
+
+### Indexes
+
+```text
+INDEX (assignment_id, user_id)
+INDEX (status)
+```
+
+### Business rules
+
+* Concurrency-safe: Pembuatan attempt dilakukan dalam DB transaction dengan pessimistic row-level lock (`lockForUpdate()`).
+* Penyerahan tugas ditolak jika: status assignment bukan `PUBLISHED`, deadline `due_at` terlewati, attempt melebihi `max_attempts`, atau attempt sebelumnya sudah `PASSED`.
+* Evaluasi instruktur menghasilkan notifikasi in-app ke siswa.
+* Penyerahan tugas baru menghasilkan notifikasi in-app ke instruktur pengajar.
+
+---
+
 # 6. Referential Integrity
 
 Foreign key behavior:

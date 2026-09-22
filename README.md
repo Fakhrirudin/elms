@@ -14,8 +14,8 @@ ELMS simulates an internal learning and competency development portal for an ent
 - **Modular Monolith**: Backend organized into high-cohesion, loosely-coupled business domains (`Authentication`, `Users`, `Courses`, `Learning`, `Assessments`, `Certificates`, `Reports`, `Notifications`).
 - **Zero Frontend Aggregation**: Client application strictly consumes authoritative server-computed statistics; no synthetic metrics or client-side averages computed over paginated datasets.
 - **Strict Role-Based Access Control (RBAC)**: Enforced via Laravel Sanctum, Route Middleware, Form Requests, and Eloquent Policies with layered defense in frontend React routes.
-- **Assessment Integrity**: Quiz answer keys (`is_correct`) are securely stripped by the backend during active attempts and only released upon submission for review.
-- **High Test Coverage**: 197 frontend tests (Vitest + React Testing Library across 39 test suites) and 284 backend tests / 1,146 assertions (PHPUnit).
+- **Assessment Integrity**: Quiz answer keys (`is_correct`) are securely stripped by the backend during active attempts; practical assignment submissions enforce pessimistic row-level locking (`lockForUpdate()`) to guarantee concurrency safety.
+- **High Test Coverage**: 217 frontend tests (Vitest + React Testing Library across 41 test suites) and 308 backend tests / 1,238 assertions (PHPUnit).
 
 ---
 
@@ -24,6 +24,7 @@ ELMS simulates an internal learning and competency development portal for an ent
 - **Authentication & RBAC**: Self-registration for employees (`/register`), password reset lifecycle (`/forgot-password`, `/reset-password` with token verification & anti-enumeration), and token-based authentication via Laravel Sanctum with 4 discrete roles: `SUPER_ADMIN`, `LEARNING_ADMIN`, `INSTRUCTOR`, and `EMPLOYEE`. Quick-fill demo account switcher on login.
 - **Role-Aware Dashboard**: Dynamic executive metrics adapted per role (4 employee cards, 4 instructor performance cards, 6 institutional admin cards).
 - **Course Authoring & Curriculum Management**: Role-scoped course authoring dashboard (`/admin/courses`), draft course creation (`/admin/courses/create`), and tabbed course editor (`/admin/courses/:courseId/edit`) supporting module outline management, text/video/document materials CRUD with mandatory completion toggles, course metadata updates, instructor assignments (Admin-only), and strict lifecycle state transitions (`DRAFT → PUBLISHED → ARCHIVED`).
+- **Practical Assignments & Submissions**: End-to-end practical assessment workflow within modules (`/my-learning/:enrollmentId/assignments/:assignmentId`) supporting secure multi-attempt file uploads (PDF, Word, Excel, PPT, images, zip up to 10MB), deadline enforcement, instructor evaluation workspace with file downloads, revision requests (`NEEDS_REVISION`), and passing scores (`PASSED`) with bi-directional in-app notifications.
 - **Course Catalog & Syllabus**: Searchable and category-filtered course catalog with dynamic call-to-action ("Enroll in Course" vs. "Continue Learning") and detailed syllabus preview.
 - **Learning Player**: Distraction-free interactive learning environment supporting text reading, PDF document viewer, and video embedding, with idempotent progress tracking.
 - **Quiz Assessments**: Multi-phase evaluation flow (Instructions & Quota → Timed Attempt → Instant Scored Result & Answer Review).
@@ -54,8 +55,8 @@ ELMS simulates an internal learning and competency development portal for an ent
 
 ### Database & Storage
 - **Database**: PostgreSQL (`pgsql`, default port `5432`)
-- **Schema**: 17 relational tables with strict foreign keys, composite unique constraints, and indexes
-- **Assets**: Laravel Filesystem (local disk / cloud-ready abstraction)
+- **Schema**: 19 relational tables with strict foreign keys, composite unique constraints, and indexes
+- **Assets**: Laravel Filesystem (local private disk for assignments / cloud-ready abstraction)
 
 ---
 
@@ -78,7 +79,7 @@ ELMS simulates an internal learning and competency development portal for an ent
 │   ├── Users           (Users, Roles, Departments)                      │
 │   ├── Courses         (Courses, Categories, Modules, Materials)       │
 │   ├── Learning        (Enrollments, Material Progress, Completion)     │
-│   ├── Assessments     (Quizzes, Questions, Attempts, Scoring)          │
+│   ├── Assessments     (Quizzes, Attempts, Assignments, Submissions)    │
 │   ├── Certificates    (Issuance, Eligibility, Ownership)               │
 │   ├── Reports         (Dashboard KPIs, Course/Learner/Quiz Reports)    │
 │   └── Notifications   (In-app notifications inbox)                     │
@@ -87,7 +88,7 @@ ELMS simulates an internal learning and competency development portal for an ent
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        PostgreSQL Database                             │
-│       (17 relational tables, composite constraints, strict FKs)        │
+│       (19 relational tables, composite constraints, strict FKs)        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -101,16 +102,19 @@ ELMS simulates an internal learning and competency development portal for an ent
 3. **Browse Catalog**: Navigate to `/courses`, apply category filters or search keywords.
 4. **Course Details**: Review syllabus modules and click **"Enroll in Course"**.
 5. **Learning Player**: Open `/my-learning/:enrollmentId`, read materials (`TEXT`, `PDF`, `VIDEO`), click **"Mark as Completed"** (progress bar updates in real time).
-6. **Quiz Assessment**: Launch quiz from curriculum, answer questions (unbiased, answers hidden), submit attempt, inspect score and review feedback.
+6. **Assessments**:
+   - **Quiz Assessment**: Launch quiz from curriculum, answer questions (unbiased, answers hidden), submit attempt, inspect score and review feedback.
+   - **Practical Assignment**: Launch module assignment (`/my-learning/:enrollmentId/assignments/:assignmentId`), review instructions and deadlines, upload submission file (attempt tracking, comments), and view instructor evaluation with feedback.
 7. **Certificate**: Click **"Request Certificate"** (validates 100% completion + passing quiz), view the Certificate of Completion, and print to PDF.
 8. **Personal Reports**: View personal learning timeline at `/reports/learning`. Unauthorized routes (`/reports/courses`, `/reports/quiz`) are guarded with HTTP 403 / Access Denied.
 
 ### Instructor & Administrator Flow
 1. **Sign In**: Login as Instructor (`instructor@elms.test`), Learning Admin (`learningadmin@elms.test`), or Super Admin (`superadmin@elms.test`).
 2. **Executive Dashboard**: Review institutional statistics (total employees, course completions, average assessment score).
-3. **Course Authoring**: Navigate to `/admin/courses` to manage organizational courses:
+3. **Course Authoring & Assessment Management**: Navigate to `/admin/courses` to manage organizational courses:
    - **Create Course**: Click "+ Create Course" (`/admin/courses/create`), specify category, title, duration, and description (creates course in `DRAFT` state; instructors are automatically assigned).
    - **Structure Syllabus**: In `/admin/courses/:id/edit`, organize curriculum modules and attach learning materials (`TEXT`, `VIDEO`, `PDF`) with optional or mandatory completion toggles.
+   - **Assignment Management**: Create and configure practical tasks per module, publish assignments (`DRAFT → PUBLISHED`), inspect submission attempts, download files, and evaluate students (`PASSED` or `NEEDS_REVISION`) with constructive feedback.
    - **Course Lifecycle**: Institutional Administrators publish draft courses directly (`DRAFT → PUBLISHED`) to expose them to learners, or retire courses (`PUBLISHED → ARCHIVED`) to prevent new enrollments while preserving historical progress.
    - **Instructor Assignments**: Institutional Administrators assign or remove instructors via the Instructors tab.
 4. **Reporting Hub**: Access `/reports` to inspect course performance tables, cross-departmental learner progress, and quiz attempt distributions scoped to the authorized role.
@@ -133,7 +137,7 @@ example-app/
 │       ├── Reports/                    # Dashboard metrics, aggregated reports
 │       └── Users/                      # Users, roles, departments
 ├── database/
-│   ├── migrations/                     # 17 PostgreSQL schema migrations
+│   ├── migrations/                     # 25 PostgreSQL schema migrations
 │   └── seeders/                        # Comprehensive seeders with demo datasets
 ├── docs/                               # Architecture & API documentation
 │   ├── api.md                          # REST API specifications (70 endpoints)

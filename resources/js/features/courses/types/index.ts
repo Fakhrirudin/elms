@@ -63,6 +63,7 @@ export interface CourseModule {
     description?: string | null;
     sort_order: number;
     materials?: Material[];
+    assignments?: import('@/features/assessments/types/assignment').Assignment[];
     created_at?: string;
     updated_at?: string;
 }

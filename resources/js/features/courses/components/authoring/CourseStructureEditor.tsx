@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     Plus,
     Edit2,
@@ -11,9 +12,17 @@ import {
     Layers,
     AlertCircle,
     CheckCircle,
+    ClipboardList,
+    Users,
+    Check,
+    X as XIcon,
 } from 'lucide-react';
 import { CourseModule, Material, MaterialType } from '../../types';
 import useCourseAuthoring from '../../hooks/useCourseAuthoring';
+import { Assignment } from '@/features/assessments/types/assignment';
+import assignmentService from '@/features/assessments/services/assignmentService';
+import AssignmentFormModal from './AssignmentFormModal';
+import AssignmentSubmissionsReviewModal from './AssignmentSubmissionsReviewModal';
 
 interface CourseStructureEditorProps {
     courseId: number | string;
@@ -40,6 +49,98 @@ export const CourseStructureEditor: React.FC<CourseStructureEditorProps> = ({
         deleteMaterial,
         isDeletingMaterial,
     } = useCourseAuthoring(courseId);
+
+    const queryClient = useQueryClient();
+
+    // Assignment authoring state
+    const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+    const [targetAssignmentModuleId, setTargetAssignmentModuleId] = useState<number | null>(null);
+    const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
+    const [isSavingAssignment, setIsSavingAssignment] = useState(false);
+
+    // Review Modal state
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [targetReviewAssignment, setTargetReviewAssignment] = useState<Assignment | null>(null);
+    const [assignmentActionLoading, setAssignmentActionLoading] = useState<Record<number, boolean>>({});
+
+    const invalidateCurriculum = () => {
+        queryClient.invalidateQueries({ queryKey: ['course-modules', String(courseId)] });
+        queryClient.invalidateQueries({ queryKey: ['course', String(courseId)] });
+        queryClient.invalidateQueries({ queryKey: ['course-modules'] });
+    };
+
+    const openAddAssignment = (modId: number) => {
+        setTargetAssignmentModuleId(modId);
+        setEditingAssignment(null);
+        setAssignmentModalOpen(true);
+    };
+
+    const openEditAssignment = (modId: number, asgn: Assignment) => {
+        setTargetAssignmentModuleId(modId);
+        setEditingAssignment(asgn);
+        setAssignmentModalOpen(true);
+    };
+
+    const handleSaveAssignment = async (payload: any) => {
+        setIsSavingAssignment(true);
+        try {
+            if (editingAssignment) {
+                await assignmentService.updateAssignment(editingAssignment.id, payload);
+            } else if (targetAssignmentModuleId) {
+                await assignmentService.createAssignment(targetAssignmentModuleId, payload);
+            }
+            invalidateCurriculum();
+        } finally {
+            setIsSavingAssignment(false);
+        }
+    };
+
+    const handlePublishAssignment = async (asgnId: number) => {
+        setAssignmentActionLoading((prev) => ({ ...prev, [asgnId]: true }));
+        try {
+            await assignmentService.publishAssignment(asgnId);
+            invalidateCurriculum();
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to publish assignment.');
+        } finally {
+            setAssignmentActionLoading((prev) => ({ ...prev, [asgnId]: false }));
+        }
+    };
+
+    const handleCloseAssignment = async (asgnId: number) => {
+        if (!confirm('Are you sure you want to close this assignment? No new submissions will be accepted.')) {
+            return;
+        }
+        setAssignmentActionLoading((prev) => ({ ...prev, [asgnId]: true }));
+        try {
+            await assignmentService.closeAssignment(asgnId);
+            invalidateCurriculum();
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to close assignment.');
+        } finally {
+            setAssignmentActionLoading((prev) => ({ ...prev, [asgnId]: false }));
+        }
+    };
+
+    const handleDeleteAssignment = async (asgnId: number) => {
+        if (!confirm('Are you sure you want to delete this assignment?')) {
+            return;
+        }
+        setAssignmentActionLoading((prev) => ({ ...prev, [asgnId]: true }));
+        try {
+            await assignmentService.deleteAssignment(asgnId);
+            invalidateCurriculum();
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to delete assignment.');
+        } finally {
+            setAssignmentActionLoading((prev) => ({ ...prev, [asgnId]: false }));
+        }
+    };
+
+    const openSubmissionsReview = (asgn: Assignment) => {
+        setTargetReviewAssignment(asgn);
+        setReviewModalOpen(true);
+    };
 
     // Collapsed module state
     const [collapsedModules, setCollapsedModules] = useState<Record<number, boolean>>({});
@@ -412,6 +513,146 @@ export const CourseStructureEditor: React.FC<CourseStructureEditorProps> = ({
                                             <Plus className="w-3.5 h-3.5" />
                                             Add Material to Module {index + 1}
                                         </button>
+
+                                        {/* Assignments Section */}
+                                        <div className="pt-4 mt-3 border-t border-border space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5">
+                                                    <ClipboardList className="w-4 h-4 text-primary" />
+                                                    <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                                        Assignments & Tasks
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                                                        {mod.assignments?.length || 0}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {(!mod.assignments || mod.assignments.length === 0) ? (
+                                                <div className="text-center py-3 bg-muted/10 border border-dashed border-border rounded-lg">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        No assignments added to this module yet.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="divide-y divide-border border border-border rounded-lg overflow-hidden bg-card">
+                                                    {mod.assignments.map((asgn) => (
+                                                        <div
+                                                            key={asgn.id}
+                                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-2 hover:bg-muted/30 transition-colors"
+                                                        >
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-sm font-semibold text-foreground">
+                                                                        {asgn.title}
+                                                                    </span>
+                                                                    {asgn.status === 'PUBLISHED' ? (
+                                                                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">
+                                                                            PUBLISHED
+                                                                        </span>
+                                                                    ) : asgn.status === 'CLOSED' ? (
+                                                                        <span className="text-[10px] font-bold text-slate-700 bg-slate-200 dark:text-slate-300 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                                                                            CLOSED
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-950/60 px-1.5 py-0.5 rounded">
+                                                                            DRAFT
+                                                                        </span>
+                                                                    )}
+                                                                    {asgn.is_required && (
+                                                                        <span className="text-[10px] text-primary font-semibold bg-primary/10 px-1.5 py-0.5 rounded">
+                                                                            Required
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                                                                    <span>Max Score: {asgn.max_score}</span>
+                                                                    <span>Attempts: {asgn.max_attempts}</span>
+                                                                    <span>
+                                                                        {asgn.due_at
+                                                                            ? `Due: ${new Date(asgn.due_at).toLocaleDateString()}`
+                                                                            : 'No deadline'}
+                                                                    </span>
+                                                                    <span className="font-semibold text-foreground">
+                                                                        {asgn.submissions_count || 0}{' '}
+                                                                        {asgn.submissions_count === 1 ? 'submission' : 'submissions'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1.5 self-end sm:self-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openSubmissionsReview(asgn)}
+                                                                    className="px-2.5 py-1 text-xs font-semibold rounded bg-muted hover:bg-muted/80 text-foreground flex items-center gap-1 transition-colors"
+                                                                    title="View and grade submissions"
+                                                                >
+                                                                    <Users className="w-3.5 h-3.5" />
+                                                                    <span>Submissions</span>
+                                                                </button>
+
+                                                                {asgn.status === 'DRAFT' && (
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={assignmentActionLoading[asgn.id]}
+                                                                        onClick={() => handlePublishAssignment(asgn.id)}
+                                                                        className="px-2.5 py-1 text-xs font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors disabled:opacity-50"
+                                                                        title="Publish assignment"
+                                                                    >
+                                                                        Publish
+                                                                    </button>
+                                                                )}
+
+                                                                {asgn.status === 'PUBLISHED' && (
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={assignmentActionLoading[asgn.id]}
+                                                                        onClick={() => handleCloseAssignment(asgn.id)}
+                                                                        className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-600 hover:bg-amber-700 text-white transition-colors disabled:opacity-50"
+                                                                        title="Close assignment"
+                                                                    >
+                                                                        Close
+                                                                    </button>
+                                                                )}
+
+                                                                {asgn.status !== 'CLOSED' && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openEditAssignment(mod.id, asgn)}
+                                                                        className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors"
+                                                                        title="Edit assignment"
+                                                                    >
+                                                                        <Edit2 className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                )}
+
+                                                                {/* Deletion permitted only when 0 submissions exist */}
+                                                                {(asgn.submissions_count || 0) === 0 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={assignmentActionLoading[asgn.id]}
+                                                                        onClick={() => handleDeleteAssignment(asgn.id)}
+                                                                        className="p-1.5 text-muted-foreground hover:text-destructive rounded hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                                                                        title="Delete assignment"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                onClick={() => openAddAssignment(mod.id)}
+                                                className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline pt-1"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                                Add Assignment to Module {index + 1}
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -607,6 +848,22 @@ export const CourseStructureEditor: React.FC<CourseStructureEditorProps> = ({
                     </div>
                 </div>
             )}
+
+            {/* Assignment Modals */}
+            <AssignmentFormModal
+                isOpen={assignmentModalOpen}
+                onClose={() => setAssignmentModalOpen(false)}
+                assignment={editingAssignment}
+                moduleId={targetAssignmentModuleId || 0}
+                onSubmit={handleSaveAssignment}
+                isSubmitting={isSavingAssignment}
+            />
+
+            <AssignmentSubmissionsReviewModal
+                isOpen={reviewModalOpen}
+                onClose={() => setReviewModalOpen(false)}
+                assignment={targetReviewAssignment}
+            />
         </div>
     );
 };
