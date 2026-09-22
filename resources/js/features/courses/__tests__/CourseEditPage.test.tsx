@@ -75,6 +75,11 @@ describe('CourseEditPage', () => {
             { id: 3, name: 'Ahmad Fauzi', email: 'ahmad@elms.test' },
             { id: 4, name: 'Siti Rahmawati', email: 'siti@elms.test' },
         ]);
+
+        mockCourseService.getCourses.mockResolvedValue({
+            courses: [],
+            meta: { current_page: 1, last_page: 1, per_page: 50, total: 0 },
+        } as any);
     });
 
     it('renders Course Editor tabs and modules structure', async () => {

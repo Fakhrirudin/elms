@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCourses } from '../../hooks/useCourses';
 import { useCategories } from '../../hooks/useCategories';
@@ -9,7 +9,7 @@ import CourseManagementFilters from '../../components/authoring/CourseManagement
 import CourseManagementTable from '../../components/authoring/CourseManagementTable';
 import CoursePagination from '../../components/CoursePagination';
 import CourseAuthoringAccessDenied from '../../components/authoring/CourseAuthoringAccessDenied';
-import { CourseStatus, InstructorCandidate } from '../../types';
+import { Category, CourseStatus, InstructorCandidate } from '../../types';
 
 export const CourseManagementPage: React.FC = () => {
     const { user } = useAuth();
@@ -28,7 +28,7 @@ export const CourseManagementPage: React.FC = () => {
     const [instructorsList, setInstructorsList] = useState<InstructorCandidate[]>([]);
 
     // Fetch categories for filter dropdown
-    const { data: categories = [] } = useCategories({
+    const { data: adminCategories = [] } = useCategories({
         enabled: isAdmin,
     });
 
@@ -56,6 +56,22 @@ export const CourseManagementPage: React.FC = () => {
         category_id: categoryId || undefined,
         instructor_id: instructorId || undefined,
     });
+
+    const categories = useMemo<Category[]>(() => {
+        if (isAdmin && adminCategories.length > 0) {
+            return adminCategories;
+        }
+        const catMap = new Map<number, Category>();
+        (data?.courses ?? []).forEach((c) => {
+            if (c.category) {
+                catMap.set(c.category.id, c.category as Category);
+            }
+        });
+        if (catMap.size === 0 && adminCategories.length > 0) {
+            return adminCategories;
+        }
+        return Array.from(catMap.values());
+    }, [isAdmin, adminCategories, data?.courses]);
 
     const { updateStatus, isUpdatingStatus } = useCourseAuthoring();
 

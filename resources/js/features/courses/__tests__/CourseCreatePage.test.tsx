@@ -11,6 +11,15 @@ import courseService from '../services/courseService';
 vi.mock('@/context/AuthContext');
 vi.mock('../services/courseService');
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
+
 const mockUseAuth = vi.mocked(useAuth);
 const mockCourseService = vi.mocked(courseService);
 
@@ -114,7 +123,43 @@ describe('CourseCreatePage', () => {
                 description: null,
                 thumbnail: null,
             });
+            expect(mockNavigate).toHaveBeenCalledWith('/admin/courses/99/edit');
         });
+    });
+
+    it('displays error message when course creation fails', async () => {
+        const user = userEvent.setup();
+        mockUseAuth.mockReturnValue({
+            user: { id: 3, name: 'Instructor', email: 'inst@elms.test', role: 'INSTRUCTOR' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            login: vi.fn(),
+            logout: vi.fn(),
+        });
+
+        mockCourseService.createCourse.mockRejectedValueOnce({
+            response: {
+                data: {
+                    message: 'Course title already in use',
+                },
+            },
+        });
+
+        renderWithProviders(<CourseCreatePage />);
+
+        const titleInput = await screen.findByLabelText(/course title/i);
+        await user.type(titleInput, 'Duplicate Title');
+
+        await screen.findByRole('option', { name: /backend engineering/i });
+        const categorySelect = screen.getByLabelText(/category/i);
+        await user.selectOptions(categorySelect, '1');
+
+        const submitButton = screen.getByRole('button', { name: /create course/i });
+        await user.click(submitButton);
+
+        expect(await screen.findByText('Course title already in use')).toBeInTheDocument();
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('renders Access Denied for Employees', () => {

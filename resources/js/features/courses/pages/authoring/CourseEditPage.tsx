@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -14,13 +14,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useCourseDetail } from '../../hooks/useCourseDetail';
 import { useCourseModules } from '../../hooks/useCourseModules';
 import { useCategories } from '../../hooks/useCategories';
+import { useCourses } from '../../hooks/useCourses';
 import useCourseAuthoring from '../../hooks/useCourseAuthoring';
 import CourseForm from '../../components/authoring/CourseForm';
 import CourseStructureEditor from '../../components/authoring/CourseStructureEditor';
 import CourseStatusActions from '../../components/authoring/CourseStatusActions';
 import CourseInstructorsManager from '../../components/authoring/CourseInstructorsManager';
 import CourseAuthoringAccessDenied from '../../components/authoring/CourseAuthoringAccessDenied';
-import { CourseStatus, UpdateCoursePayload } from '../../types';
+import { Category, CourseStatus, UpdateCoursePayload } from '../../types';
 
 type EditorTab = 'structure' | 'details' | 'lifecycle' | 'instructors';
 
@@ -49,9 +50,33 @@ export const CourseEditPage: React.FC = () => {
         isLoading: isLoadingModules,
     } = useCourseModules(courseId);
 
-    const { data: categories = [] } = useCategories({
+    const { data: adminCategories = [] } = useCategories({
         enabled: isAdmin,
     });
+
+    const { data: coursesData } = useCourses(
+        { per_page: 50 },
+        { enabled: !isAdmin }
+    );
+
+    const categories = useMemo<Category[]>(() => {
+        if (isAdmin && adminCategories.length > 0) {
+            return adminCategories;
+        }
+        const catMap = new Map<number, Category>();
+        if (course?.category) {
+            catMap.set(course.category.id, course.category as Category);
+        }
+        (coursesData?.courses ?? []).forEach((c) => {
+            if (c.category) {
+                catMap.set(c.category.id, c.category as Category);
+            }
+        });
+        if (catMap.size === 0 && adminCategories.length > 0) {
+            return adminCategories;
+        }
+        return Array.from(catMap.values());
+    }, [isAdmin, adminCategories, course?.category, coursesData]);
 
     const {
         updateCourse,

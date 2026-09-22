@@ -132,7 +132,24 @@ describe('CourseManagementPage', () => {
         expect(screen.queryByRole('button', { name: /archive/i })).not.toBeInTheDocument();
     });
 
-    it('renders Access Denied screen for Employees attempting to view course management', async () => {
+    it('renders Create Course button for Instructor linking to course creation page', async () => {
+        mockUseAuth.mockReturnValue({
+            user: { id: 3, name: 'Ahmad Fauzi', email: 'ahmad@elms.test', role: 'INSTRUCTOR' },
+            token: 'test-token',
+            isAuthenticated: true,
+            isLoading: false,
+            login: vi.fn(),
+            logout: vi.fn(),
+        });
+
+        renderWithProviders(<CourseManagementPage />);
+
+        const createCourseLink = await screen.findByRole('link', { name: /create course/i });
+        expect(createCourseLink).toBeInTheDocument();
+        expect(createCourseLink).toHaveAttribute('href', '/admin/courses/create');
+    });
+
+    it('renders Access Denied screen and does not show Create Course button for Employees', async () => {
         mockUseAuth.mockReturnValue({
             user: { id: 5, name: 'Employee', email: 'emp@elms.test', role: 'EMPLOYEE' },
             token: 'test-token',
@@ -148,5 +165,6 @@ describe('CourseManagementPage', () => {
         expect(
             screen.getByText(/Course authoring is restricted to authorized Instructors and Administrators/i)
         ).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: /create course/i })).not.toBeInTheDocument();
     });
 });
