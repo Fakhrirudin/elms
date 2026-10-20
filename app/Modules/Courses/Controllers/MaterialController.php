@@ -12,6 +12,8 @@ use App\Modules\Courses\Resources\MaterialResource;
 use App\Modules\Courses\Services\MaterialService;
 use App\Shared\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 
 class MaterialController extends Controller
 {
@@ -54,6 +56,37 @@ class MaterialController extends Controller
             new MaterialResource($material),
             'Material retrieved successfully',
         );
+    }
+
+    public function file(Material $material): Response
+    {
+        $this->authorize('viewFile', $material);
+
+        if ($material->type !== Material::TYPE_PDF || empty($material->file_path)) {
+            abort(404, 'PDF material file not found.');
+        }
+
+        $filePath = $material->file_path;
+        if (Storage::disk('local')->exists($filePath)) {
+            return Storage::disk('local')->response(
+                $filePath,
+                basename($filePath),
+                [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="'.basename($filePath).'"',
+                ]
+            );
+        }
+
+        $legacyPath = storage_path('app/'.$filePath);
+        if (file_exists($legacyPath)) {
+            return response()->file($legacyPath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.basename($filePath).'"',
+            ]);
+        }
+
+        abort(404, 'Material document file not found on storage.');
     }
 
     public function update(UpdateMaterialRequest $request, Material $material): JsonResponse

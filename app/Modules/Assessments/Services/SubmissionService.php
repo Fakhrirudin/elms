@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Modules\Learning\Services\CourseCompletionService;
 use App\Modules\Notifications\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -20,6 +21,7 @@ class SubmissionService
 {
     public function __construct(
         private readonly NotificationService $notificationService,
+        private readonly ?CourseCompletionService $courseCompletionService = null,
     ) {}
 
     /**
@@ -133,6 +135,20 @@ class SubmissionService
                     }
                 }
 
+                $lockedAssignment->loadMissing('module');
+                $enrollment = Enrollment::query()
+                    ->where('user_id', $user->id)
+                    ->where('course_id', $lockedAssignment->module->course_id)
+                    ->first();
+
+                if ($enrollment) {
+                    $enrollment->update([
+                        'last_activity_type' => 'ASSIGNMENT',
+                        'last_activity_id' => $lockedAssignment->id,
+                        'last_accessed_at' => now(),
+                    ]);
+                }
+
                 return $submission;
             } catch (QueryException $e) {
                 // Safely clean up orphaned private file if duplicate attempt race occurs
@@ -215,6 +231,19 @@ class SubmissionService
                     'score' => $submission->score,
                 ]
             );
+        }
+
+        // If assignment was reviewed as PASSED, check and update course completion status
+        if ($data['status'] === AssignmentSubmission::STATUS_PASSED && $submission->user) {
+            $assignment->loadMissing('module');
+            $enrollment = Enrollment::query()
+                ->where('user_id', $submission->user_id)
+                ->where('course_id', $assignment->module->course_id)
+                ->first();
+
+            if ($enrollment) {
+                ($this->courseCompletionService ?? app(CourseCompletionService::class))->updateCompletionStatus($enrollment);
+            }
         }
 
         return $submission;

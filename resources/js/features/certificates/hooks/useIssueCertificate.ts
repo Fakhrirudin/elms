@@ -16,9 +16,14 @@ export const useIssueCertificate = () => {
             // Refresh employee dashboard certificate metrics
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
             // Refresh enrollment status (transitions to COMPLETED)
+            queryClient.invalidateQueries({ queryKey: ['enrollment'] });
             queryClient.invalidateQueries({ queryKey: ['enrollment', enrollmentId] });
             // Refresh learning progress status
+            queryClient.invalidateQueries({ queryKey: ['learning-progress'] });
             queryClient.invalidateQueries({ queryKey: ['learning-progress', enrollmentId] });
+            // Refresh learning overview status
+            queryClient.invalidateQueries({ queryKey: ['learning-overview'] });
+            queryClient.invalidateQueries({ queryKey: ['learning-overview', enrollmentId] });
         },
     });
 };

@@ -2,11 +2,13 @@
 
 namespace App\Modules\Assessments\Services;
 
+use App\Models\Enrollment;
 use App\Models\Option;
 use App\Models\Quiz;
 use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use App\Models\User;
+use App\Modules\Learning\Services\CourseCompletionService;
 use App\Modules\Notifications\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,8 +16,11 @@ use Illuminate\Validation\ValidationException;
 class QuizAttemptService
 {
     public function __construct(
-        protected ?NotificationService $notificationService = null
-    ) {}
+        protected ?NotificationService $notificationService = null,
+        protected ?CourseCompletionService $courseCompletionService = null
+    ) {
+        $this->courseCompletionService = $courseCompletionService ?? app(CourseCompletionService::class);
+    }
 
     public function startAttempt(User $user, Quiz $quiz): QuizAttempt
     {
@@ -38,6 +43,20 @@ class QuizAttemptService
             'attempt_number' => $attemptNumber,
             'started_at' => now(),
         ]);
+
+        // Track last activity on enrollment
+        $enrollment = Enrollment::query()
+            ->where('user_id', $user->id)
+            ->whereHas('course.modules.quizzes', fn ($q) => $q->where('quizzes.id', $quiz->id))
+            ->first();
+
+        if ($enrollment) {
+            $enrollment->update([
+                'last_activity_type' => 'QUIZ',
+                'last_activity_id' => $quiz->id,
+                'last_accessed_at' => now(),
+            ]);
+        }
 
         return $attempt->load(['quiz.questions.options']);
     }
@@ -120,6 +139,23 @@ class QuizAttemptService
             ]);
 
             ($this->notificationService ?? app(NotificationService::class))->notifyQuizResult($attempt);
+
+            $enrollment = Enrollment::query()
+                ->where('user_id', $attempt->user_id)
+                ->whereHas('course.modules.quizzes', fn ($q) => $q->where('quizzes.id', $attempt->quiz_id))
+                ->first();
+
+            if ($enrollment) {
+                $enrollment->update([
+                    'last_activity_type' => 'QUIZ',
+                    'last_activity_id' => $attempt->quiz_id,
+                    'last_accessed_at' => now(),
+                ]);
+
+                if ($passed) {
+                    $this->courseCompletionService->updateCompletionStatus($enrollment);
+                }
+            }
         });
 
         return $attempt->fresh(['quiz.questions.options', 'answers']);

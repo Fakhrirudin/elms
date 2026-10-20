@@ -2,10 +2,12 @@ import api from '@/services/api';
 import { ApiResponse, PaginatedResponse } from '@/types/api';
 import {
     Enrollment,
+    LearningOverview,
     LearningProgress,
     MaterialCompletionResult,
     MyCoursesParams,
     MyCoursesResult,
+    UpdateActivityPayload,
 } from '../types';
 
 export const learningService = {
@@ -60,6 +62,50 @@ export const learningService = {
      */
     async getLearningProgress(enrollmentId: number | string): Promise<LearningProgress> {
         const response = await api.get<ApiResponse<LearningProgress>>(`/enrollments/${enrollmentId}/progress`);
+        return response.data.data;
+    },
+
+    /**
+     * Get authoritative full learning overview (modules, activities, completion status, last activity).
+     * GET /api/v1/enrollments/{enrollmentId}/learning-overview
+     */
+    async getLearningOverview(enrollmentId: number | string): Promise<LearningOverview> {
+        const response = await api.get<ApiResponse<LearningOverview>>(`/enrollments/${enrollmentId}/learning-overview`);
+        return response.data.data;
+    },
+
+    /**
+     * Get the next or last activity to continue learning.
+     * GET /api/v1/enrollments/{enrollmentId}/current-activity
+     */
+    async getCurrentActivity(enrollmentId: number | string): Promise<any> {
+        const response = await api.get<ApiResponse<any>>(`/enrollments/${enrollmentId}/current-activity`);
+        return response.data.data;
+    },
+
+    /**
+     * Update the learner's current/last activity.
+     * POST /api/v1/enrollments/{enrollmentId}/current-activity
+     */
+    async updateCurrentActivity(
+        enrollmentId: number | string,
+        payload: UpdateActivityPayload
+    ): Promise<any> {
+        const response = await api.post<ApiResponse<any>>(
+            `/enrollments/${enrollmentId}/current-activity`,
+            payload
+        );
+        return response.data.data;
+    },
+
+    /**
+     * Force recalculation of course progress.
+     * POST /api/v1/enrollments/{enrollmentId}/recalculate-progress
+     */
+    async recalculateProgress(enrollmentId: number | string): Promise<any> {
+        const response = await api.post<ApiResponse<any>>(
+            `/enrollments/${enrollmentId}/recalculate-progress`
+        );
         return response.data.data;
     },
 

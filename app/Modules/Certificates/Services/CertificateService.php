@@ -2,6 +2,8 @@
 
 namespace App\Modules\Certificates\Services;
 
+use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
 use App\Models\Certificate;
 use App\Models\Enrollment;
 use App\Models\Material;
@@ -21,7 +23,7 @@ class CertificateService
     ) {}
 
     /**
-     * @return array{eligible: bool, reasons: string[], mandatory_completed: bool, quizzes_passed: bool, already_issued: bool}
+     * @return array{eligible: bool, reasons: string[], mandatory_completed: bool, quizzes_passed: bool, assignments_passed: bool, already_issued: bool}
      */
     public function checkEligibility(Enrollment $enrollment): array
     {
@@ -58,6 +60,26 @@ class CertificateService
             }
         }
 
+        $requiredAssignments = Assignment::query()
+            ->whereHas('module', fn ($q) => $q->where('course_id', $course->id))
+            ->where('status', Assignment::STATUS_PUBLISHED)
+            ->where('is_required', true)
+            ->get();
+
+        $assignmentsPassed = true;
+        foreach ($requiredAssignments as $assignment) {
+            $hasPassedSubmission = AssignmentSubmission::query()
+                ->where('assignment_id', $assignment->id)
+                ->where('user_id', $enrollment->user_id)
+                ->where('status', AssignmentSubmission::STATUS_PASSED)
+                ->exists();
+
+            if (! $hasPassedSubmission) {
+                $assignmentsPassed = false;
+                break;
+            }
+        }
+
         $alreadyIssued = $enrollment->certificate()->exists();
 
         $reasons = [];
@@ -67,12 +89,16 @@ class CertificateService
         if (! $quizzesPassed) {
             $reasons[] = 'All published quizzes in the course must be passed.';
         }
+        if (! $assignmentsPassed) {
+            $reasons[] = 'All required assignments in the course must be passed.';
+        }
 
         return [
-            'eligible' => $mandatoryCompleted && $quizzesPassed,
+            'eligible' => $mandatoryCompleted && $quizzesPassed && $assignmentsPassed,
             'reasons' => $reasons,
             'mandatory_completed' => $mandatoryCompleted,
             'quizzes_passed' => $quizzesPassed,
+            'assignments_passed' => $assignmentsPassed,
             'already_issued' => $alreadyIssued,
         ];
     }

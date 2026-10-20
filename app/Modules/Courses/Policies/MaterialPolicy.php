@@ -42,6 +42,21 @@ class MaterialPolicy
         return $course->status === Course::STATUS_PUBLISHED;
     }
 
+    public function viewFile(User $user, Material $material): bool
+    {
+        if ($this->isAdmin($user)) {
+            return true;
+        }
+
+        $course = $material->module->course;
+
+        if ($user->hasRole(Role::INSTRUCTOR) && $this->isAssignedInstructor($user, $course)) {
+            return true;
+        }
+
+        return $user->enrollments()->where('course_id', $course->id)->exists();
+    }
+
     public function create(User $user, Module $module): bool
     {
         if ($this->isAdmin($user)) {

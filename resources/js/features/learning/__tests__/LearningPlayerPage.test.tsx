@@ -7,12 +7,16 @@ import useEnrollment from '../hooks/useEnrollment';
 import useLearningProgress from '../hooks/useLearningProgress';
 import useCompleteMaterial from '../hooks/useCompleteMaterial';
 import useCourseModules from '@/features/courses/hooks/useCourseModules';
+import useLearningOverview from '../hooks/useLearningOverview';
+import useUpdateActivity from '../hooks/useUpdateActivity';
 import useMyCertificates from '@/features/certificates/hooks/useMyCertificates';
 import useIssueCertificate from '@/features/certificates/hooks/useIssueCertificate';
 
 vi.mock('../hooks/useEnrollment');
 vi.mock('../hooks/useLearningProgress');
 vi.mock('../hooks/useCompleteMaterial');
+vi.mock('../hooks/useLearningOverview');
+vi.mock('../hooks/useUpdateActivity');
 vi.mock('@/features/courses/hooks/useCourseModules');
 vi.mock('@/features/certificates/hooks/useMyCertificates');
 vi.mock('@/features/certificates/hooks/useIssueCertificate');
@@ -20,6 +24,8 @@ vi.mock('@/features/certificates/hooks/useIssueCertificate');
 const mockUseEnrollment = vi.mocked(useEnrollment);
 const mockUseLearningProgress = vi.mocked(useLearningProgress);
 const mockUseCompleteMaterial = vi.mocked(useCompleteMaterial);
+const mockUseLearningOverview = vi.mocked(useLearningOverview);
+const mockUseUpdateActivity = vi.mocked(useUpdateActivity);
 const mockUseCourseModules = vi.mocked(useCourseModules);
 const mockUseMyCertificates = vi.mocked(useMyCertificates);
 const mockUseIssueCertificate = vi.mocked(useIssueCertificate);
@@ -47,6 +53,15 @@ describe('LearningPlayerPage', () => {
             isPending: false,
             isError: false,
             error: null,
+        } as any);
+        mockUseLearningOverview.mockReturnValue({
+            data: undefined,
+            isLoading: false,
+            refetch: vi.fn(),
+        } as any);
+        mockUseUpdateActivity.mockReturnValue({
+            mutate: vi.fn(),
+            isPending: false,
         } as any);
     });
 
@@ -431,6 +446,126 @@ describe('LearningPlayerPage', () => {
 
         expect(screen.queryByTestId('certificate-earned-card')).not.toBeInTheDocument();
         expect(screen.queryByTestId('request-certificate-btn')).not.toBeInTheDocument();
+    });
+
+    it('renders two-column workspace with interactive outline when learning overview is loaded', () => {
+        const mockOverview = {
+            enrollment_id: 7,
+            course_id: 10,
+            status: 'IN_PROGRESS' as const,
+            completed_at: null,
+            overall_percentage: 67,
+            total_required_activities: 3,
+            completed_required_activities: 2,
+            total_modules: 1,
+            completed_modules: 0,
+            is_course_completed: false,
+            modules: [
+                {
+                    id: 100,
+                    title: 'Module 1: Legal Frameworks',
+                    description: 'Constitutional basis',
+                    order: 1,
+                    is_completed: false,
+                    total_required: 3,
+                    completed_required: 2,
+                    activities: [
+                        {
+                            type: 'MATERIAL' as const,
+                            id: 201,
+                            module_id: 100,
+                            title: 'Vienna Convention Fundamentals',
+                            sort_order: 1,
+                            is_required: true,
+                            status: 'COMPLETED' as const,
+                            material_type: 'TEXT' as const,
+                        },
+                        {
+                            type: 'QUIZ' as const,
+                            id: 301,
+                            module_id: 100,
+                            title: 'Treaty Law Assessment',
+                            sort_order: 1001,
+                            is_required: true,
+                            status: 'PASSED' as const,
+                            passing_grade: 80,
+                            max_attempts: 3,
+                            attempts_count: 1,
+                            latest_attempt: {
+                                id: 50,
+                                attempt_number: 1,
+                                score: 90,
+                                passed: true,
+                            },
+                        },
+                        {
+                            type: 'ASSIGNMENT' as const,
+                            id: 401,
+                            module_id: 100,
+                            title: 'Draft Treaty Essay',
+                            sort_order: 2001,
+                            is_required: true,
+                            status: 'SUBMITTED' as const,
+                            max_score: 100,
+                            submission_count: 1,
+                        },
+                    ],
+                },
+            ],
+            current_activity: {
+                type: 'ASSIGNMENT' as const,
+                id: 401,
+                title: 'Draft Treaty Essay',
+                module_id: 100,
+            },
+        };
+
+        mockUseEnrollment.mockReturnValue({
+            data: mockEnrollment,
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        } as any);
+        mockUseCourseModules.mockReturnValue({
+            data: mockModules,
+            isLoading: false,
+        } as any);
+        mockUseLearningProgress.mockReturnValue({
+            data: mockProgress,
+            isLoading: false,
+        } as any);
+        mockUseLearningOverview.mockReturnValue({
+            data: mockOverview,
+            isLoading: false,
+            refetch: vi.fn(),
+        } as any);
+
+        render(
+            <MemoryRouter initialEntries={['/my-learning/7']}>
+                <Routes>
+                    <Route path="/my-learning/:enrollmentId" element={<LearningPlayerPage />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        // Check workspace layout
+        expect(screen.getByTestId('learning-workspace-layout')).toBeInTheDocument();
+        expect(screen.getByTestId('course-outline')).toBeInTheDocument();
+
+        // Outline contains all activities
+        expect(screen.getByTestId('activity-item-material-201')).toBeInTheDocument();
+        expect(screen.getByTestId('activity-item-quiz-301')).toBeInTheDocument();
+        expect(screen.getByTestId('activity-item-assignment-401')).toBeInTheDocument();
+
+        // Assignment is default active because current_activity is ASSIGNMENT 401
+        expect(screen.getByTestId('assignment-launcher-card-401')).toBeInTheDocument();
+        expect(screen.getByTestId('open-assignment-cta')).toBeInTheDocument();
+
+        // Click quiz in outline to view quiz launcher
+        fireEvent.click(screen.getByTestId('activity-item-quiz-301'));
+        expect(screen.getByTestId('quiz-launcher-card-301')).toBeInTheDocument();
+        expect(screen.getByTestId('start-quiz-cta')).toBeInTheDocument();
     });
 });
 

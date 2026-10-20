@@ -101,11 +101,16 @@ ELMS simulates an internal learning and competency development portal for an ent
 2. **Dashboard**: Inspect current learning progress, enrolled courses, and earned certificates.
 3. **Browse Catalog**: Navigate to `/courses`, apply category filters or search keywords.
 4. **Course Details**: Review syllabus modules and click **"Enroll in Course"**.
-5. **Learning Player**: Open `/my-learning/:enrollmentId`, read materials (`TEXT`, `PDF`, `VIDEO`), click **"Mark as Completed"** (progress bar updates in real time).
-6. **Assessments**:
-   - **Quiz Assessment**: Launch quiz from curriculum, answer questions (unbiased, answers hidden), submit attempt, inspect score and review feedback.
-   - **Practical Assignment**: Launch module assignment (`/my-learning/:enrollmentId/assignments/:assignmentId`), review instructions and deadlines, upload submission file (attempt tracking, comments), and view instructor evaluation with feedback.
-7. **Certificate**: Click **"Request Certificate"** (validates 100% completion + passing quiz), view the Certificate of Completion, and print to PDF.
+5. **Learning Workspace**: Open `/my-learning/:enrollmentId`, featuring a unified two-column layout:
+   - **Course Outline (Left)**: Interactive syllabus hierarchy with real-time activity status badges (materials, quizzes, assignments) and module completion counts.
+   - **Activity Player & Launcher (Right)**: Read rich materials (`TEXT`, `PDF`, `VIDEO`) with persistent activity tracking, launch module quizzes, or submit assignment files.
+6. **Assessments & Progress**:
+   - **Quiz Assessment**: Launch quiz from outline, answer questions (unbiased, answers hidden before submit), receive instant server-authoritative score and attempt history.
+   - **Practical Assignment**: Launch module assignment, review guidelines and deadlines, submit revision files (`PDF`, etc.) with comments, and review instructor grades and constructive feedback.
+   - **Unified Completion Rule**: Course is completed **only** when all mandatory materials are completed, all published quizzes are passed, and all published required assignments have passed submissions.
+7. **Certificate & Celebration**:
+   - Upon meeting 100% authoritative completion, a celebratory milestone card unlocks the **"Request Certificate"** CTA.
+   - Certificate of Completion is issued with a verifiable credential ID, viewable at `/certificates/:id` and printable to PDF.
 8. **Personal Reports**: View personal learning timeline at `/reports/learning`. Unauthorized routes (`/reports/courses`, `/reports/quiz`) are guarded with HTTP 403 / Access Denied.
 
 ### Instructor & Administrator Flow

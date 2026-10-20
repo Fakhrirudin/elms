@@ -20,12 +20,24 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property Carbon $enrolled_at
  * @property Carbon|null $completed_at
+ * @property string|null $last_activity_type
+ * @property int|null $last_activity_id
+ * @property Carbon|null $last_accessed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
  * @property-read Course $course
  */
-#[Fillable(['user_id', 'course_id', 'status', 'enrolled_at', 'completed_at'])]
+#[Fillable([
+    'user_id',
+    'course_id',
+    'status',
+    'enrolled_at',
+    'completed_at',
+    'last_activity_type',
+    'last_activity_id',
+    'last_accessed_at',
+])]
 #[UsePolicy(EnrollmentPolicy::class)]
 class Enrollment extends Model
 {
@@ -46,6 +58,7 @@ class Enrollment extends Model
         return [
             'enrolled_at' => 'datetime',
             'completed_at' => 'datetime',
+            'last_accessed_at' => 'datetime',
         ];
     }
 

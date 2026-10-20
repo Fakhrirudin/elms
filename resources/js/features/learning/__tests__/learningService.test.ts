@@ -138,5 +138,83 @@ describe('learningService', () => {
         expect(mockApi.post).toHaveBeenCalledWith('/enrollments/3/materials/15/complete');
         expect(result).toEqual(mockCompletion);
     });
+
+    it('getLearningOverview sends GET request to /enrollments/:id/learning-overview', async () => {
+        const mockOverview = {
+            enrollment_id: 3,
+            course_id: 2,
+            status: 'IN_PROGRESS' as const,
+            overall_percentage: 60,
+            modules: [],
+        };
+
+        mockApi.get.mockResolvedValueOnce({
+            data: {
+                success: true,
+                message: 'Learning overview retrieved',
+                data: mockOverview,
+            },
+        });
+
+        const result = await learningService.getLearningOverview(3);
+
+        expect(mockApi.get).toHaveBeenCalledWith('/enrollments/3/learning-overview');
+        expect(result).toEqual(mockOverview);
+    });
+
+    it('getCurrentActivity sends GET request to /enrollments/:id/current-activity', async () => {
+        const mockCurrent = {
+            current_activity: { type: 'MATERIAL', id: 10 },
+        };
+
+        mockApi.get.mockResolvedValueOnce({
+            data: {
+                success: true,
+                message: 'Current activity retrieved',
+                data: mockCurrent,
+            },
+        });
+
+        const result = await learningService.getCurrentActivity(3);
+
+        expect(mockApi.get).toHaveBeenCalledWith('/enrollments/3/current-activity');
+        expect(result).toEqual(mockCurrent);
+    });
+
+    it('updateCurrentActivity sends POST request to /enrollments/:id/current-activity', async () => {
+        mockApi.post.mockResolvedValueOnce({
+            data: {
+                success: true,
+                message: 'Activity updated',
+                data: { success: true },
+            },
+        });
+
+        const result = await learningService.updateCurrentActivity(3, {
+            activity_type: 'QUIZ',
+            activity_id: 5,
+        });
+
+        expect(mockApi.post).toHaveBeenCalledWith('/enrollments/3/current-activity', {
+            activity_type: 'QUIZ',
+            activity_id: 5,
+        });
+        expect(result).toEqual({ success: true });
+    });
+
+    it('recalculateProgress sends POST request to /enrollments/:id/recalculate-progress', async () => {
+        mockApi.post.mockResolvedValueOnce({
+            data: {
+                success: true,
+                message: 'Progress recalculated',
+                data: { overall_percentage: 100 },
+            },
+        });
+
+        const result = await learningService.recalculateProgress(3);
+
+        expect(mockApi.post).toHaveBeenCalledWith('/enrollments/3/recalculate-progress');
+        expect(result).toEqual({ overall_percentage: 100 });
+    });
 });
 

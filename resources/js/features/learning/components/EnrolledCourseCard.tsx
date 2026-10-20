@@ -1,11 +1,10 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Enrollment } from '../types';
 import EnrollmentStatusBadge from './EnrollmentStatusBadge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Calendar, ArrowRight, Clock, Award } from 'lucide-react';
+import { BookOpen, Calendar, ArrowRight, Clock, Award, Layers, PlayCircle } from 'lucide-react';
 import { Certificate } from '@/features/certificates/types';
 
 interface EnrolledCourseCardProps {
@@ -13,8 +12,17 @@ interface EnrolledCourseCardProps {
     certificate?: Certificate | null;
 }
 
-export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollment, certificate }) => {
+export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollment, certificate: propCert }) => {
+    const navigate = useNavigate();
     const course = enrollment.course;
+    const cert = propCert || enrollment.certificate;
+
+    const handleNavigate = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (enrollment?.id) {
+            navigate(`/my-learning/${enrollment.id}`);
+        }
+    };
 
     const formattedEnrolledDate = enrollment.enrolled_at
         ? new Date(enrollment.enrolled_at).toLocaleDateString('en-US', {
@@ -24,8 +32,22 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollme
         })
         : null;
 
+    // Progress details
+    const percentage = enrollment.progress?.percentage ?? (enrollment.status === 'COMPLETED' ? 100 : 0);
+    const totalModules = enrollment.progress?.total_modules ?? 0;
+    const completedModules = enrollment.progress?.completed_modules ?? 0;
+    const lastActivity = enrollment.progress?.last_activity;
+
+    // Button label determination
+    let ctaLabel = 'Continue Learning';
+    if (enrollment.status === 'COMPLETED') {
+        ctaLabel = 'Review Course';
+    } else if (enrollment.status === 'ENROLLED' && percentage === 0) {
+        ctaLabel = 'Start Course';
+    }
+
     return (
-        <Card className="flex flex-col h-full overflow-hidden border-border/80 hover:border-border transition-all duration-200 hover:shadow-sm">
+        <Card className="flex flex-col h-full overflow-hidden border-border/80 hover:border-border transition-all duration-200 hover:shadow-sm" data-testid={`enrolled-course-card-${enrollment.id}`}>
             {/* Thumbnail / Header Media */}
             <div className="relative aspect-video w-full bg-muted/40 overflow-hidden border-b border-border/50">
                 {course?.thumbnail ? (
@@ -81,33 +103,65 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollme
                 )}
             </CardHeader>
 
-            <CardContent className="px-4 sm:px-5 py-2 space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                    {formattedEnrolledDate && (
-                        <div className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
-                            <span>Enrolled: {formattedEnrolledDate}</span>
-                        </div>
-                    )}
+            <CardContent className="px-4 sm:px-5 py-2 space-y-3">
+                {/* Progress bar section */}
+                <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-foreground text-[11px]">Progress</span>
+                        <span className="font-semibold text-primary text-[11px]" data-testid="course-progress-percent">
+                            {percentage}%
+                        </span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+                        <div
+                            className="h-full rounded-full bg-primary transition-all duration-300"
+                            style={{ width: `${percentage}%` }}
+                            role="progressbar"
+                            aria-valuenow={percentage}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                        />
+                    </div>
+                </div>
 
-                    {course?.estimated_duration && (
-                        <div className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
-                            <span>{course.estimated_duration}h</span>
+                {/* Meta details */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                    <div className="flex items-center gap-1.5">
+                        <Layers className="h-3.5 w-3.5 text-muted-foreground/80 shrink-0" />
+                        <span>
+                            {totalModules > 0
+                                ? `${completedModules} / ${totalModules} Modules`
+                                : `${course?.estimated_duration || 1}h duration`}
+                        </span>
+                    </div>
+
+                    {lastActivity && lastActivity.type && (
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium truncate max-w-[130px]">
+                            <PlayCircle className="h-3 w-3 text-primary/70 shrink-0" />
+                            <span className="capitalize truncate">
+                                {lastActivity.type.toLowerCase()}
+                            </span>
                         </div>
                     )}
                 </div>
+
+                {formattedEnrolledDate && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <Calendar className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                        <span>Enrolled: {formattedEnrolledDate}</span>
+                    </div>
+                )}
             </CardContent>
 
             {/* Card Footer with CTA */}
             <CardFooter className="p-4 sm:p-5 pt-2 flex flex-col gap-2">
-                <Button asChild className="w-full text-xs font-semibold gap-1.5">
-                    <Link to={`/my-learning/${enrollment.id}`}>
-                        <span>{enrollment.status === 'COMPLETED' ? 'Review Course' : 'Continue Learning'}</span>
+                <Button asChild className="w-full text-xs font-semibold gap-1.5" data-testid="course-cta-btn">
+                    <Link to={`/my-learning/${enrollment.id}`} onClick={handleNavigate}>
+                        <span>{ctaLabel}</span>
                         <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                 </Button>
-                {certificate && (
+                {cert && (
                     <Button
                         asChild
                         variant="outline"
@@ -115,7 +169,7 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollme
                         className="w-full text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
                         data-testid="card-view-certificate-btn"
                     >
-                        <Link to={`/certificates/${certificate.id}`}>
+                        <Link to={`/certificates/${cert.id}`}>
                             <Award className="h-3.5 w-3.5" />
                             <span>View Certificate</span>
                         </Link>
@@ -127,4 +181,3 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({ enrollme
 };
 
 export default EnrolledCourseCard;
-

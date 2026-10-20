@@ -9,6 +9,7 @@ use App\Models\Module;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LearningProgressTest extends TestCase
@@ -355,5 +356,105 @@ class LearningProgressTest extends TestCase
             ->getJson("/api/v1/enrollments/{$enrollment->id}/progress");
 
         $response->assertForbidden();
+    }
+
+    public function test_enrolled_employee_can_stream_pdf_material_file(): void
+    {
+        Storage::fake('local');
+        $employee = $this->userWithRole(Role::EMPLOYEE);
+        $course = Course::factory()->published()->create();
+        $module = Module::factory()->create(['course_id' => $course->id]);
+
+        $filePath = 'materials/pdf/sample-document.pdf';
+        Storage::disk('local')->put($filePath, '%PDF-1.4 dummy content');
+
+        $material = Material::factory()->create([
+            'module_id' => $module->id,
+            'type' => Material::TYPE_PDF,
+            'file_path' => $filePath,
+            'is_mandatory' => true,
+        ]);
+
+        $enrollment = Enrollment::factory()->create([
+            'user_id' => $employee->id,
+            'course_id' => $course->id,
+        ]);
+
+        $response = $this->withToken($this->tokenFor($employee))
+            ->get("/api/v1/enrollments/{$enrollment->id}/materials/{$material->id}/file");
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_employee_cannot_stream_material_file_from_another_course(): void
+    {
+        Storage::fake('local');
+        $employee = $this->userWithRole(Role::EMPLOYEE);
+        $courseA = Course::factory()->published()->create();
+        $courseB = Course::factory()->published()->create();
+        $moduleB = Module::factory()->create(['course_id' => $courseB->id]);
+
+        $filePath = 'materials/pdf/sample-document-b.pdf';
+        Storage::disk('local')->put($filePath, '%PDF-1.4 dummy content');
+
+        $materialB = Material::factory()->create([
+            'module_id' => $moduleB->id,
+            'type' => Material::TYPE_PDF,
+            'file_path' => $filePath,
+        ]);
+
+        $enrollmentA = Enrollment::factory()->create([
+            'user_id' => $employee->id,
+            'course_id' => $courseA->id,
+        ]);
+
+        $response = $this->withToken($this->tokenFor($employee))
+            ->get("/api/v1/enrollments/{$enrollmentA->id}/materials/{$materialB->id}/file");
+
+        $response->assertForbidden();
+    }
+
+    public function test_employee_cannot_stream_material_file_using_another_users_enrollment(): void
+    {
+        Storage::fake('local');
+        $employeeA = $this->userWithRole(Role::EMPLOYEE);
+        $employeeB = $this->userWithRole(Role::EMPLOYEE);
+        $course = Course::factory()->published()->create();
+        $module = Module::factory()->create(['course_id' => $course->id]);
+
+        $filePath = 'materials/pdf/sample-document.pdf';
+        Storage::disk('local')->put($filePath, '%PDF-1.4 dummy content');
+
+        $material = Material::factory()->create([
+            'module_id' => $module->id,
+            'type' => Material::TYPE_PDF,
+            'file_path' => $filePath,
+        ]);
+
+        $enrollmentB = Enrollment::factory()->create([
+            'user_id' => $employeeB->id,
+            'course_id' => $course->id,
+        ]);
+
+        $response = $this->withToken($this->tokenFor($employeeA))
+            ->get("/api/v1/enrollments/{$enrollmentB->id}/materials/{$material->id}/file");
+
+        $response->assertForbidden();
+    }
+
+    public function test_unauthenticated_user_cannot_stream_material_file(): void
+    {
+        $course = Course::factory()->published()->create();
+        $module = Module::factory()->create(['course_id' => $course->id]);
+        $material = Material::factory()->create([
+            'module_id' => $module->id,
+            'type' => Material::TYPE_PDF,
+            'file_path' => 'materials/pdf/sample.pdf',
+        ]);
+        $enrollment = Enrollment::factory()->create(['course_id' => $course->id]);
+
+        $response = $this->getJson("/api/v1/enrollments/{$enrollment->id}/materials/{$material->id}/file");
+        $response->assertUnauthorized();
     }
 }

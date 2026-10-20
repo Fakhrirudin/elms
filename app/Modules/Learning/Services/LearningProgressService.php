@@ -9,6 +9,12 @@ use Illuminate\Validation\ValidationException;
 
 class LearningProgressService
 {
+    public function __construct(
+        protected ?CourseCompletionService $courseCompletionService = null
+    ) {
+        $this->courseCompletionService = $courseCompletionService ?? app(CourseCompletionService::class);
+    }
+
     /**
      * @return array{total_mandatory: int, completed_mandatory: int, progress: int}
      */
@@ -82,20 +88,13 @@ class LearningProgressService
 
         $calc = $this->calculateProgress($enrollment);
 
-        if ($calc['total_mandatory'] > 0) {
-            if ($calc['completed_mandatory'] === $calc['total_mandatory']) {
-                $enrollment->status = Enrollment::STATUS_COMPLETED;
-                $enrollment->completed_at = $enrollment->completed_at ?? now();
-                $enrollment->save();
-            } elseif ($enrollment->status === Enrollment::STATUS_ENROLLED) {
-                $enrollment->status = Enrollment::STATUS_IN_PROGRESS;
-                $enrollment->save();
-            }
-        } else {
-            $enrollment->status = Enrollment::STATUS_COMPLETED;
-            $enrollment->completed_at = $enrollment->completed_at ?? now();
-            $enrollment->save();
-        }
+        $enrollment->update([
+            'last_activity_type' => 'MATERIAL',
+            'last_activity_id' => $material->id,
+            'last_accessed_at' => now(),
+        ]);
+
+        $this->courseCompletionService->updateCompletionStatus($enrollment);
 
         return [
             'material_id' => $material->id,

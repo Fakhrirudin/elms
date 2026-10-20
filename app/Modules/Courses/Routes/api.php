@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')
     ->name('materials.')
     ->group(function () {
         Route::get('/{material}', [MaterialController::class, 'show'])->name('show');
+        Route::get('/{material}/file', [MaterialController::class, 'file'])->name('file');
         Route::match(['put', 'patch', 'post'], '/{material}', [MaterialController::class, 'update'])->name('update');
         Route::delete('/{material}', [MaterialController::class, 'destroy'])->name('destroy');
     });

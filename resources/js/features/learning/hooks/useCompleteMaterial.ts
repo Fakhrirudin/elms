@@ -18,6 +18,8 @@ export const useCompleteMaterial = () => {
         onSuccess: (_data, { enrollmentId }) => {
             // Authoritative progress recalculation
             queryClient.invalidateQueries({ queryKey: ['learning-progress', enrollmentId] });
+            // Learning overview (modules, activities, completion status, overall percentage)
+            queryClient.invalidateQueries({ queryKey: ['learning-overview', enrollmentId] });
             // Enrollment status update (e.g. ENROLLED -> IN_PROGRESS or COMPLETED)
             queryClient.invalidateQueries({ queryKey: ['enrollment', enrollmentId] });
             // Enrolled courses list status

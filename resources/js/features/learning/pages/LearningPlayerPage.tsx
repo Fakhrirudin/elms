@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import useEnrollment from '../hooks/useEnrollment';
 import useLearningProgress from '../hooks/useLearningProgress';
 import useCompleteMaterial from '../hooks/useCompleteMaterial';
+import useLearningOverview from '../hooks/useLearningOverview';
+import useUpdateActivity from '../hooks/useUpdateActivity';
 import useCourseModules from '@/features/courses/hooks/useCourseModules';
 import useMyCertificates from '@/features/certificates/hooks/useMyCertificates';
 import useIssueCertificate from '@/features/certificates/hooks/useIssueCertificate';
 import { Material } from '@/features/courses/types';
+import { ActivityType, ModuleOutlineActivity } from '../types';
 import EnrollmentStatusBadge from '../components/EnrollmentStatusBadge';
 import MaterialListItem from '../components/player/MaterialListItem';
 import MaterialContentViewer from '../components/player/MaterialContentViewer';
+import CourseOutline from '../components/workspace/CourseOutline';
+import CourseCompletionCard from '../components/workspace/CourseCompletionCard';
+import QuizLauncherCard from '../components/workspace/QuizLauncherCard';
+import AssignmentLauncherCard from '../components/workspace/AssignmentLauncherCard';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,12 +31,15 @@ import {
     Users,
     Award,
     ClipboardList,
+    PlayCircle,
 } from 'lucide-react';
 
 export const LearningPlayerPage: React.FC = () => {
     const { enrollmentId } = useParams<{ enrollmentId: string }>();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const explicitQuizId = searchParams.get('quiz_id');
+    const explicitMaterialId = searchParams.get('material_id');
+    const explicitAssignmentId = searchParams.get('assignment_id');
 
     // 1. Authoritative Enrollment Resource
     const {
@@ -50,27 +60,184 @@ export const LearningPlayerPage: React.FC = () => {
     const {
         data: progress,
         isLoading: isLoadingProgress,
+        refetch: refetchProgress,
     } = useLearningProgress(enrollmentId);
 
-    // 4. Material Completion Mutation
+    // 4. Authoritative Full Learning Overview (Modules with quizzes, assignments, statuses)
+    const {
+        data: overview,
+        isLoading: isLoadingOverview,
+        refetch: refetchOverview,
+    } = useLearningOverview(enrollmentId);
+
+    // 5. Activity update mutation
+    const updateActivityMutation = useUpdateActivity(enrollmentId);
+
+    // 6. Material Completion Mutation
     const completeMaterialMutation = useCompleteMaterial();
 
-    // 5. Authoritative Certificate Data & Issuance Mutation
+    // 7. Authoritative Certificate Data & Issuance Mutation
     const { data: certificatesData } = useMyCertificates();
     const issueCertificateMutation = useIssueCertificate();
 
-    const existingCertificate = certificatesData?.certificates?.find(
-        (c) => c.enrollment_id === Number(enrollmentId)
-    );
+    const certObj = overview?.certificate;
+    const existingCertificate =
+        (certObj && 'certificate' in certObj && certObj.certificate ? certObj.certificate : null) ||
+        (certObj && 'certificate_number' in certObj && certObj.certificate_number ? (certObj as any) : null) ||
+        certificatesData?.certificates?.find((c) => c.enrollment_id === Number(enrollmentId)) ||
+        null;
 
     const handleRequestCertificate = () => {
         if (!enrollmentId) return;
         issueCertificateMutation.mutate(enrollmentId);
     };
 
-    // 6. In-memory Completed Materials & Selected Material State
-    const [completedMaterialIds, setCompletedMaterialIds] = useState<Set<number>>(new Set());
+    // 8. Active Selection State
+    const [selectedActivity, setSelectedActivity] = useState<{
+        type: ActivityType;
+        id: number;
+    } | null>(null);
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+    const [completedMaterialIds, setCompletedMaterialIds] = useState<Set<number>>(new Set());
+
+    // Sync completed material IDs from overview modules
+    useEffect(() => {
+        if (overview?.modules) {
+            const completed = new Set<number>();
+            overview.modules.forEach((mod) => {
+                mod.activities.forEach((act) => {
+                    if (act.type === 'MATERIAL' && (act.status === 'COMPLETED' || act.completed_at)) {
+                        completed.add(Number(act.id));
+                    }
+                });
+            });
+            setCompletedMaterialIds((prev) => {
+                const next = new Set(prev);
+                completed.forEach((id) => next.add(id));
+                return next;
+            });
+        }
+    }, [overview]);
+
+    // Sync selected activity based on query params or overview current_activity
+    useEffect(() => {
+        if (explicitQuizId) {
+            setSelectedActivity({ type: 'QUIZ', id: Number(explicitQuizId) });
+        } else if (explicitAssignmentId) {
+            setSelectedActivity({ type: 'ASSIGNMENT', id: Number(explicitAssignmentId) });
+        } else if (explicitMaterialId) {
+            setSelectedActivity({ type: 'MATERIAL', id: Number(explicitMaterialId) });
+            // Find material in modules or fallback to overview
+            let found = false;
+            for (const mod of modules) {
+                const mat = mod.materials?.find((m) => m.id === Number(explicitMaterialId));
+                if (mat) {
+                    setSelectedMaterial(mat);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && overview?.modules) {
+                for (const mod of overview.modules) {
+                    const act = mod.activities.find((a) => a.type === 'MATERIAL' && Number(a.id) === Number(explicitMaterialId));
+                    if (act) {
+                        setSelectedMaterial({
+                            id: act.id,
+                            module_id: act.module_id,
+                            title: act.title,
+                            type: act.material_type || 'TEXT',
+                            content: act.content || null,
+                            file_path: act.file_path || null,
+                            video_url: act.video_url || null,
+                            sort_order: act.sort_order,
+                            is_mandatory: act.is_required,
+                        });
+                        break;
+                    }
+                }
+            }
+        } else if (overview?.current_activity && !selectedActivity) {
+            setSelectedActivity({
+                type: overview.current_activity.type,
+                id: Number(overview.current_activity.id),
+            });
+            if (overview.current_activity.type === 'MATERIAL') {
+                let found = false;
+                for (const mod of modules) {
+                    const mat = mod.materials?.find((m) => m.id === Number(overview.current_activity?.id));
+                    if (mat) {
+                        setSelectedMaterial(mat);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found && overview.modules) {
+                    for (const mod of overview.modules) {
+                        const act = mod.activities.find((a) => a.type === 'MATERIAL' && Number(a.id) === Number(overview.current_activity?.id));
+                        if (act) {
+                            setSelectedMaterial({
+                                id: act.id,
+                                module_id: act.module_id,
+                                title: act.title,
+                                type: act.material_type || 'TEXT',
+                                content: act.content || null,
+                                file_path: act.file_path || null,
+                                video_url: act.video_url || null,
+                                sort_order: act.sort_order,
+                                is_mandatory: act.is_required,
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }, [explicitQuizId, explicitAssignmentId, explicitMaterialId, overview?.current_activity, modules]);
+
+    const handleSelectOutlineActivity = (activity: ModuleOutlineActivity) => {
+        setSelectedActivity({ type: activity.type, id: activity.id });
+
+        if (activity.type === 'MATERIAL') {
+            // Find material object from modules
+            let foundMat: Material | null = null;
+            for (const mod of modules) {
+                const mat = mod.materials?.find((m) => m.id === activity.id);
+                if (mat) {
+                    foundMat = mat;
+                    break;
+                }
+            }
+            if (!foundMat) {
+                foundMat = {
+                    id: activity.id,
+                    module_id: activity.module_id,
+                    title: activity.title,
+                    type: activity.material_type || 'TEXT',
+                    content: activity.content || null,
+                    file_path: activity.file_path || null,
+                    video_url: activity.video_url || null,
+                    sort_order: activity.sort_order,
+                    is_mandatory: activity.is_required,
+                };
+            }
+            setSelectedMaterial(foundMat);
+            setSearchParams({ material_id: String(activity.id) });
+        } else if (activity.type === 'QUIZ') {
+            setSelectedMaterial(null);
+            setSearchParams({ quiz_id: String(activity.id) });
+        } else if (activity.type === 'ASSIGNMENT') {
+            setSelectedMaterial(null);
+            setSearchParams({ assignment_id: String(activity.id) });
+        }
+
+        // Persist last activity to server
+        if (enrollmentId) {
+            updateActivityMutation.mutate({
+                activity_type: activity.type,
+                activity_id: activity.id,
+            });
+        }
+    };
 
     const handleMarkComplete = (materialId: number) => {
         if (!enrollmentId) return;
@@ -80,9 +247,25 @@ export const LearningPlayerPage: React.FC = () => {
             {
                 onSuccess: (result) => {
                     setCompletedMaterialIds((prev) => new Set([...prev, result.material_id]));
+                    refetchOverview();
+                    refetchProgress();
+                    refetchEnrollment();
                 },
             }
         );
+    };
+
+    const handleContinueLearning = () => {
+        if (!overview?.current_activity) return;
+        const curr = overview.current_activity;
+        // Find activity in overview modules
+        for (const mod of overview.modules) {
+            const act = mod.activities.find((a) => a.type === curr.type && Number(a.id) === Number(curr.id));
+            if (act) {
+                handleSelectOutlineActivity(act);
+                return;
+            }
+        }
     };
 
     // Helper: Determine if a material is completed
@@ -90,8 +273,17 @@ export const LearningPlayerPage: React.FC = () => {
         if (completedMaterialIds.has(material.id)) {
             return true;
         }
-        // If course is already completed in backend, all mandatory materials are finished
-        if (progress?.status === 'COMPLETED' && material.is_mandatory) {
+        if (overview?.modules) {
+            for (const mod of overview.modules) {
+                const act = mod.activities.find(
+                    (a) => a.type === 'MATERIAL' && Number(a.id) === Number(material.id)
+                );
+                if (act && (act.status === 'COMPLETED' || act.completed_at)) {
+                    return true;
+                }
+            }
+        }
+        if ((progress?.status === 'COMPLETED' || overview?.status === 'COMPLETED') && material.is_mandatory) {
             return true;
         }
         return false;
@@ -154,17 +346,47 @@ export const LearningPlayerPage: React.FC = () => {
     }
 
     const course = enrollment.course;
-    const progressPercentage = progress?.progress ?? 0;
-    const totalMandatory = progress?.total_mandatory_materials ?? 0;
-    const completedMandatory = progress?.completed_mandatory_materials ?? 0;
-    const currentStatus = progress?.status ?? enrollment.status;
+    const progressPercentage =
+        overview?.overall_percentage ??
+        (overview as any)?.progress?.overall_percentage ??
+        progress?.progress ??
+        0;
+    const totalMandatory =
+        overview?.total_required_activities ??
+        (overview as any)?.progress?.total_required_activities ??
+        progress?.total_mandatory_materials ??
+        0;
+    const completedMandatory =
+        overview?.completed_required_activities ??
+        (overview as any)?.progress?.completed_required_activities ??
+        progress?.completed_mandatory_materials ??
+        0;
+    const currentStatus = overview?.status ?? progress?.status ?? enrollment.status;
+    const isCompleted =
+        currentStatus === 'COMPLETED' ||
+        overview?.is_course_completed ||
+        Boolean((overview as any)?.progress?.is_completed);
 
     const instructorNames = course?.instructors && course.instructors.length > 0
         ? course.instructors.map((i) => i.name).join(', ')
         : 'Assigned Instructors';
 
+    // Find currently selected outline activity from overview if available
+    let activeOutlineActivity: ModuleOutlineActivity | null = null;
+    if (overview && selectedActivity) {
+        for (const mod of overview.modules) {
+            const found = mod.activities.find(
+                (a) => a.type === selectedActivity.type && Number(a.id) === Number(selectedActivity.id)
+            );
+            if (found) {
+                activeOutlineActivity = found;
+                break;
+            }
+        }
+    }
+
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="space-y-8 max-w-6xl mx-auto">
             {/* Navigation Header */}
             <div>
                 <Button
@@ -236,8 +458,21 @@ export const LearningPlayerPage: React.FC = () => {
                                 Authoritative progress calculated from mandatory material completion
                             </CardDescription>
                         </div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary">
-                            <span>{progressPercentage}% Completed</span>
+                        <div className="flex items-center gap-3">
+                            {!isCompleted && overview?.current_activity && (
+                                <Button
+                                    size="sm"
+                                    onClick={handleContinueLearning}
+                                    className="text-xs font-semibold gap-1.5 shrink-0"
+                                    data-testid="continue-learning-btn"
+                                >
+                                    <PlayCircle className="h-3.5 w-3.5" />
+                                    <span>Continue Learning</span>
+                                </Button>
+                            )}
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary">
+                                <span>{progressPercentage}% Completed</span>
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
@@ -296,7 +531,7 @@ export const LearningPlayerPage: React.FC = () => {
                     </CardHeader>
                     <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="text-xs text-muted-foreground">
-                            Issued on {existingCertificate.issued_at ? new Date(existingCertificate.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Official Record'}.
+                            Issued on {existingCertificate.issued_at ? new Date(existingCertificate.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Completion Record'}.
                         </div>
                         <Button
                             asChild
@@ -375,12 +610,82 @@ export const LearningPlayerPage: React.FC = () => {
                 </Card>
             ) : null}
 
-            {/* Active Material Content Viewer (if material is selected) */}
-            {selectedMaterial && (
+            {/* Course Workspace: Two-Column Layout (Outline on Left, Player/Viewer on Right) */}
+            {overview && overview.modules && overview.modules.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" data-testid="learning-workspace-layout">
+                    {/* Left Column: Interactive Course Outline */}
+                    <div className="lg:col-span-4 space-y-4">
+                        <CourseOutline
+                            modules={overview.modules}
+                            selectedActivity={selectedActivity}
+                            onSelectActivity={handleSelectOutlineActivity}
+                        />
+                    </div>
+
+                    {/* Right Column: Activity Viewer / Player */}
+                    <div className="lg:col-span-8 space-y-6">
+                        {isCompleted && <CourseCompletionCard overview={overview} />}
+
+                        {selectedActivity?.type === 'MATERIAL' && selectedMaterial && (
+                            <div className="space-y-2">
+                                <h2 className="text-base font-bold text-foreground">Material Reader</h2>
+                                <MaterialContentViewer
+                                    material={selectedMaterial}
+                                    enrollmentId={enrollment.id}
+                                    isCompleted={isMaterialCompleted(selectedMaterial)}
+                                    isCompleting={completeMaterialMutation.isPending}
+                                    onClose={() => setSelectedMaterial(null)}
+                                    onMarkComplete={handleMarkComplete}
+                                />
+                            </div>
+                        )}
+
+                        {selectedActivity?.type === 'QUIZ' && activeOutlineActivity && (
+                            <QuizLauncherCard
+                                enrollmentId={enrollment.id}
+                                activity={activeOutlineActivity}
+                            />
+                        )}
+
+                        {selectedActivity?.type === 'ASSIGNMENT' && activeOutlineActivity && (
+                            <AssignmentLauncherCard
+                                enrollmentId={enrollment.id}
+                                activity={activeOutlineActivity}
+                            />
+                        )}
+
+                        {!selectedActivity && !isCompleted && (
+                            <Card className="border-dashed border-2 border-border p-8 text-center bg-card/40">
+                                <CardContent className="space-y-3">
+                                    <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+                                    <h4 className="text-sm font-semibold text-foreground">Select an Activity</h4>
+                                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                                        Choose a lesson material, quiz assessment, or assignment from the course outline on the left to start learning.
+                                    </p>
+                                    {overview.current_activity && (
+                                        <Button
+                                            size="sm"
+                                            onClick={handleContinueLearning}
+                                            className="text-xs font-semibold gap-1.5"
+                                        >
+                                            <PlayCircle className="h-3.5 w-3.5" />
+                                            <span>Continue Learning</span>
+                                        </Button>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Active Material Content Viewer (fallback when overview is not yet loaded or in tests) */}
+            {(!overview || !overview.modules || overview.modules.length === 0) && selectedMaterial && (
                 <div className="space-y-2">
                     <h2 className="text-base font-bold text-foreground">Material Reader</h2>
                     <MaterialContentViewer
                         material={selectedMaterial}
+                        enrollmentId={enrollment.id}
                         isCompleted={isMaterialCompleted(selectedMaterial)}
                         isCompleting={completeMaterialMutation.isPending}
                         onClose={() => setSelectedMaterial(null)}
@@ -389,7 +694,7 @@ export const LearningPlayerPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Curriculum Modules & Materials Checklist */}
+            {/* Curriculum Modules & Materials Checklist (Preserved for backward-compatibility & testing) */}
             <div className="space-y-4">
                 <div className="space-y-1">
                     <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
@@ -468,7 +773,10 @@ export const LearningPlayerPage: React.FC = () => {
                                                                     completeMaterialMutation.isPending &&
                                                                     completeMaterialMutation.variables?.materialId === material.id
                                                                 }
-                                                                onSelect={(mat) => setSelectedMaterial(mat)}
+                                                                onSelect={(mat) => {
+                                                                    setSelectedMaterial(mat);
+                                                                    setSelectedActivity({ type: 'MATERIAL', id: mat.id });
+                                                                }}
                                                                 onMarkComplete={handleMarkComplete}
                                                             />
                                                         ))}
@@ -573,4 +881,3 @@ export const LearningPlayerPage: React.FC = () => {
 };
 
 export default LearningPlayerPage;
-
